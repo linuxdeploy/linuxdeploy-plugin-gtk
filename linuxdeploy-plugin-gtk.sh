@@ -47,3 +47,11 @@ if [ "$APPDIR" == "" ]; then
 fi
 
 mkdir -p "$APPDIR"
+
+pushd "$APPDIR"
+
+# source: https://github.com/AppImage/pkg2appimage/blob/3168d7ce787246feb697a950005fbffec0533def/legacy/pinta/Recipe#L41
+mkdir -p usr/share/glib-2.0/schemas/
+pushd usr/share/glib-2.0/schemas/
+ln -s /usr/share/glib-2.0/schemas/gschemas.compiled .
+popd
