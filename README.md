@@ -16,5 +16,5 @@ This is an (as of yet experimental) plugin for linuxdeploy. Its job is to bundle
 > [...]
 
 # call through linuxdeploy
-> ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin gtk --output appimage --icon mypackage.png --desktop-file mypackage.desktop
+> ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin gtk --output appimage --icon-file mypackage.png --desktop-file mypackage.desktop
 ```
