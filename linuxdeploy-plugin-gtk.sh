@@ -67,6 +67,11 @@ else
     exit 1
 fi
 
+if [ -z "$LINUXDEPLOY" ]; then
+    echo -e "$0: LINUXDEPLOY environment variable is not set.\nDownload a suitable linuxdeploy AppImage, set the environment variable and re-run the plugin."
+    exit 1
+fi
+
 echo "Installing AppRun hook"
 HOOKSDIR="$APPDIR/apprun-hooks"
 HOOKFILE="$HOOKSDIR/linuxdeploy-plugin-gtk.sh"
@@ -124,12 +129,18 @@ echo "Copying more libraries"
 gobject_libdir="$("$PKG_CONFIG" --variable=libdir gobject-2.0)"
 gio_libdir="$("$PKG_CONFIG" --variable=libdir gio-2.0)"
 librsvg_libdir="$("$PKG_CONFIG" --variable=libdir librsvg-2.0)"
-cp $verbose \
-    "$gdk_libdir/"libgdk_pixbuf*.so* \
-    "$gobject_libdir/"libgobject*.so* \
-    "$gio_libdir/"libgio*.so* \
-    "$librsvg_libdir/"librsvg*.so* \
-    "$APPDIR/usr/lib/"
-cat >> "$HOOKFILE" <<EOF
-export LD_LIBRARY_PATH="\$APPDIR/usr/lib:\$LD_LIBRARY_PATH"
-EOF
+FIND_ARRAY=(
+    "$gdk_libdir"     "libgdk_pixbuf-*.so*"
+    "$gobject_libdir" "libgobject-*.so*"
+    "$gio_libdir"     "libgio-*.so*"
+    "$librsvg_libdir" "librsvg-*.so*"
+)
+LIBRARIES=()
+for (( i=0; i<${#FIND_ARRAY[@]}; i+=2 )); do
+    directory=${FIND_ARRAY[i]}
+    library=${FIND_ARRAY[i+1]}
+    while IFS= read -r -d '' file; do
+        LIBRARIES+=(--library="$file")
+    done < <(find "$directory" -type f -name "$library" -print0)
+done
+"$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
