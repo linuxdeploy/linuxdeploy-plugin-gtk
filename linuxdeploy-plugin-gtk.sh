@@ -25,6 +25,34 @@ copy_tree() {
     done
 }
 
+search_tool() {
+    local tool="$1"
+    local directory="$2"
+
+    if command -v "$tool" > /dev/null; then
+        echo "$tool"
+        return 0
+    fi
+
+    PATH_ARRAY=(
+        "/usr/lib/$(uname -m)-linux-gnu/$directory/$tool"
+        "/usr/lib/$directory/$tool"
+        "/usr/bin/$tool"
+        "/usr/bin/$tool-64"
+        "/usr/bin/$tool-32"
+    )
+
+    for path in "${PATH_ARRAY[@]}"; do
+        if [ -x "$path" ]; then
+            echo "$path"
+            return 0
+        fi
+    done
+
+    echo "$0: $tool not found, aborting" > /dev/stderr
+    { exit 1; }
+}
+
 APPDIR=
 
 while [ "$1" != "" ]; do
@@ -103,6 +131,7 @@ gtk3_exec_prefix="$("$PKG_CONFIG" --variable=exec_prefix gtk+-3.0)"
 gtk3_libdir="$("$PKG_CONFIG" --variable=libdir gtk+-3.0)/gtk-3.0"
 gtk3_immodulesdir="$gtk3_libdir/$("$PKG_CONFIG" --variable=gtk_binary_version gtk+-3.0)/immodules"
 gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
+gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
 copy_tree "$gtk3_libdir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
@@ -111,12 +140,23 @@ export GTK_IM_MODULE_DIR="\$APPDIR/$gtk3_immodulesdir"
 export GTK_IM_MODULE_FILE="\$CACHEDIR/immodules.cache"
 sed "s|$gtk3_libdir|\$APPDIR/$gtk3_libdir|g" "\$APPDIR/$gtk3_immodules_cache_file" > "\$GTK_IM_MODULE_FILE"
 EOF
+if [ -x "$gtk3_immodules_query" ]; then
+    echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
+    "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
+else
+    echo "Warning: gtk-query-immodules-3.0 not found"
+fi
+if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
+    echo "Warning: immodules.cache file is missing"
+fi
 
 echo "Installing GDK PixBufs"
 gdk_libdir="$("$PKG_CONFIG" --variable=libdir gdk-pixbuf-2.0)"
 gdk_pixbuf_binarydir="$("$PKG_CONFIG" --variable=gdk_pixbuf_binarydir gdk-pixbuf-2.0)"
 gdk_pixbuf_cache_file="$("$PKG_CONFIG" --variable=gdk_pixbuf_cache_file gdk-pixbuf-2.0)"
 gdk_pixbuf_moduledir="$("$PKG_CONFIG" --variable=gdk_pixbuf_moduledir gdk-pixbuf-2.0)"
+# Note: gdk_pixbuf_query_loaders variable is not defined on some systems
+gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
 copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GDK_PIXBUF_MODULEDIR="\$APPDIR/$gdk_pixbuf_moduledir"
@@ -124,6 +164,15 @@ export GDK_PIXBUF_MODULE_FILE="\$CACHEDIR/loaders.cache"
 export LD_LIBRARY_PATH="\$GDK_PIXBUF_MODULEDIR:\$LD_LIBRARY_PATH"
 sed "s|$gdk_pixbuf_moduledir|\$APPDIR/$gdk_pixbuf_moduledir|g" "\$APPDIR/$gdk_pixbuf_cache_file" > "\$GDK_PIXBUF_MODULE_FILE"
 EOF
+if [ -x "$gdk_pixbuf_query" ]; then
+    echo "Updating pixbuf cache in $APPDIR/$gdk_pixbuf_cache_file"
+    "$gdk_pixbuf_query" > "$APPDIR/$gdk_pixbuf_cache_file"
+else
+    echo "Warning: gdk-pixbuf-query-loaders not found"
+fi
+if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
+    echo "Warning: loaders.cache file is missing"
+fi
 
 echo "Copying more libraries"
 gobject_libdir="$("$PKG_CONFIG" --variable=libdir gobject-2.0)"
