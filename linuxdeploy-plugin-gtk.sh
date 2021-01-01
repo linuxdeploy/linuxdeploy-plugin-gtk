@@ -67,6 +67,11 @@ else
     exit 1
 fi
 
+if ! which patchelf &>/dev/null && ! type patchelf &>/dev/null; then
+    echo -e "$0: patchelf not found.\nInstall patchelf then re-run the plugin."
+    exit 1
+fi
+
 if [ -z "$LINUXDEPLOY" ]; then
     echo -e "$0: LINUXDEPLOY environment variable is not set.\nDownload a suitable linuxdeploy AppImage, set the environment variable and re-run the plugin."
     exit 1
@@ -102,6 +107,7 @@ echo "Installing GTK 3.0 modules"
 gtk3_exec_prefix="$("$PKG_CONFIG" --variable=exec_prefix gtk+-3.0)"
 gtk3_libdir="$("$PKG_CONFIG" --variable=libdir gtk+-3.0)/gtk-3.0"
 gtk3_immodulesdir="$gtk3_libdir/$("$PKG_CONFIG" --variable=gtk_binary_version gtk+-3.0)/immodules"
+gtk3_printbackendsdir="$gtk3_libdir/$("$PKG_CONFIG" --variable=gtk_binary_version gtk+-3.0)/printbackends"
 gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
 copy_tree "$gtk3_libdir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
@@ -141,6 +147,19 @@ for (( i=0; i<${#FIND_ARRAY[@]}; i+=2 )); do
     library=${FIND_ARRAY[i+1]}
     while IFS= read -r -d '' file; do
         LIBRARIES+=(--library="$file")
-    done < <(find "$directory" -type f -name "$library" -print0)
+    done < <(find "$directory" \( -type l -o -type f \) -name "$library" -print0)
 done
 "$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
+
+echo "Manually setting rpath for GTK modules"
+PATCH_ARRAY=(
+    "$gtk3_immodulesdir"
+    "$gtk3_printbackendsdir"
+    "$gdk_pixbuf_moduledir"
+)
+for directory in "${PATCH_ARRAY[@]}"; do
+    while IFS= read -r -d '' file; do
+        # shellcheck disable=SC2016
+        patchelf --set-rpath '$ORIGIN/../../../..' "$APPDIR/$file"
+    done < <(find "$directory" -name '*.so' -print0)
+done
