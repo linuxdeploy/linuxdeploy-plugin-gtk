@@ -117,6 +117,9 @@ APPIMAGE_GTK_THEME="${APPIMAGE_GTK_THEME:-"Adwaita:$GTK_THEME_VARIANT"}" # Allow
 CACHEDIR="$(mktemp --tmpdir --directory .AppRun.XXXXXXXX)"
 
 export APPDIR="${APPDIR:-"$(dirname "$(realpath "$0")")"}" # Workaround to run extracted AppImage
+export OLDPATH="$PATH"
+export PATH="$APPDIR/usr/bin:$PATH"
+
 export GTK_DATA_PREFIX="$APPDIR"
 export GTK_THEME="$APPIMAGE_GTK_THEME" # Custom themes are broken
 export GDK_BACKEND=x11 # Crash with Wayland backend on Wayland
@@ -211,4 +214,53 @@ for directory in "${PATCH_ARRAY[@]}"; do
         # shellcheck disable=SC2016
         patchelf --set-rpath '$ORIGIN/../../../..' "$APPDIR/$file"
     done < <(find "$directory" -name '*.so' -print0)
+done
+
+echo "Add a wrapper for some binaries"
+# Note: some files on system must not be started with overrides above
+# See https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/issues/11#issuecomment-761788064
+BINDIR="$APPDIR/usr/bin"
+EOAFILE="$BINDIR/exec-outside-appimage"
+mkdir -p "$BINDIR"
+cat > "$EOAFILE" <<\EOF
+#! /bin/bash
+
+export PATH="$OLDPATH"
+
+unset OLDPATH
+unset GTK_DATA_PREFIX
+unset GTK_THEME
+unset GDK_BACKEND
+unset XDG_DATA_DIRS
+unset GSETTINGS_SCHEMA_DIR
+unset GTK_EXE_PREFIX
+unset GTK_PATH
+unset GTK_IM_MODULE_DIR
+unset GTK_IM_MODULE_FILE
+unset GDK_PIXBUF_MODULEDIR
+unset GDK_PIXBUF_MODULE_FILE
+
+# Enter 'if' when '$0' is 'exec-outside-appimage' script itself
+# Symbolic links to 'exec-outside-appimage' should not enter in 'if'
+app="$(basename "$0")"
+if ! command -v "$app" &> /dev/null; then
+    app="$1"
+    shift
+    if [ -z "$app" ]; then
+        echo "$0: this script requires a command as argument"
+        exit 1
+    elif ! command -v "$app" &> /dev/null; then
+        echo "'$app' not found in PATH ($PATH)"
+        exit 1
+    fi
+fi
+"$app" "$@"
+EOF
+chmod $verbose 755 "$EOAFILE"
+EOA_ARRAY=(
+    "xdg-open"
+    "eog"
+)
+for file in "${EOA_ARRAY[@]}"; do
+    ln $verbose -s "$(basename "$EOAFILE")" "$BINDIR/$file"
 done
