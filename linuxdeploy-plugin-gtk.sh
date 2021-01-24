@@ -147,10 +147,10 @@ if [ -x "$gtk3_immodules_query" ]; then
     echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
     "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
 else
-    echo "Warning: gtk-query-immodules-3.0 not found"
+    echo "WARNING: gtk-query-immodules-3.0 not found"
 fi
 if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
-    echo "Warning: immodules.cache file is missing"
+    echo "WARNING: immodules.cache file is missing"
 fi
 
 echo "Installing GDK PixBufs"
@@ -170,10 +170,10 @@ if [ -x "$gdk_pixbuf_query" ]; then
     echo "Updating pixbuf cache in $APPDIR/$gdk_pixbuf_cache_file"
     "$gdk_pixbuf_query" > "$APPDIR/$gdk_pixbuf_cache_file"
 else
-    echo "Warning: gdk-pixbuf-query-loaders not found"
+    echo "WARNING: gdk-pixbuf-query-loaders not found"
 fi
 if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
-    echo "Warning: loaders.cache file is missing"
+    echo "WARNING: loaders.cache file is missing"
 fi
 
 echo "Copying more libraries"
