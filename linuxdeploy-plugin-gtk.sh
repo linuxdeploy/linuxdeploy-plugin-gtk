@@ -168,7 +168,6 @@ copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GDK_PIXBUF_MODULEDIR="\$APPDIR/$gdk_pixbuf_moduledir"
 export GDK_PIXBUF_MODULE_FILE="\$CACHEDIR/loaders.cache"
-export LD_LIBRARY_PATH="\$GDK_PIXBUF_MODULEDIR:\$LD_LIBRARY_PATH"
 sed "s|$gdk_pixbuf_moduledir|\$APPDIR/$gdk_pixbuf_moduledir|g" "\$APPDIR/$gdk_pixbuf_cache_file" > "\$GDK_PIXBUF_MODULE_FILE"
 EOF
 if [ -x "$gdk_pixbuf_query" ]; then
