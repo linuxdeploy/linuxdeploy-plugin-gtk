@@ -29,8 +29,7 @@ search_tool() {
     local tool="$1"
     local directory="$2"
 
-    if command -v "$tool" > /dev/null; then
-        echo "$tool"
+    if command -v "$tool"; then
         return 0
     fi
 
@@ -48,9 +47,6 @@ search_tool() {
             return 0
         fi
     done
-
-    echo "$0: $tool not found, aborting" > /dev/stderr
-    { exit 1; }
 }
 
 APPDIR=
