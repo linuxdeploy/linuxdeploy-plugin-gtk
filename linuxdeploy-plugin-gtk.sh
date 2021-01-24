@@ -196,7 +196,7 @@ for (( i=0; i<${#FIND_ARRAY[@]}; i+=2 )); do
     directory=${FIND_ARRAY[i]}
     library=${FIND_ARRAY[i+1]}
     while IFS= read -r -d '' file; do
-        LIBRARIES+=(--library="$file")
+        LIBRARIES+=( "--library=$file" )
     done < <(find "$directory" \( -type l -o -type f \) -name "$library" -print0)
 done
 "$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
