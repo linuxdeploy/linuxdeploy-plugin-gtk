@@ -29,8 +29,7 @@ search_tool() {
     local tool="$1"
     local directory="$2"
 
-    if command -v "$tool" > /dev/null; then
-        echo "$tool"
+    if command -v "$tool"; then
         return 0
     fi
 
@@ -48,9 +47,6 @@ search_tool() {
             return 0
         fi
     done
-
-    echo "$0: $tool not found, aborting" > /dev/stderr
-    { exit 1; }
 }
 
 APPDIR=
@@ -151,10 +147,10 @@ if [ -x "$gtk3_immodules_query" ]; then
     echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
     "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
 else
-    echo "Warning: gtk-query-immodules-3.0 not found"
+    echo "WARNING: gtk-query-immodules-3.0 not found"
 fi
 if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
-    echo "Warning: immodules.cache file is missing"
+    echo "WARNING: immodules.cache file is missing"
 fi
 
 echo "Installing GDK PixBufs"
@@ -168,17 +164,16 @@ copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GDK_PIXBUF_MODULEDIR="\$APPDIR/$gdk_pixbuf_moduledir"
 export GDK_PIXBUF_MODULE_FILE="\$CACHEDIR/loaders.cache"
-export LD_LIBRARY_PATH="\$GDK_PIXBUF_MODULEDIR:\$LD_LIBRARY_PATH"
 sed "s|$gdk_pixbuf_moduledir|\$APPDIR/$gdk_pixbuf_moduledir|g" "\$APPDIR/$gdk_pixbuf_cache_file" > "\$GDK_PIXBUF_MODULE_FILE"
 EOF
 if [ -x "$gdk_pixbuf_query" ]; then
     echo "Updating pixbuf cache in $APPDIR/$gdk_pixbuf_cache_file"
     "$gdk_pixbuf_query" > "$APPDIR/$gdk_pixbuf_cache_file"
 else
-    echo "Warning: gdk-pixbuf-query-loaders not found"
+    echo "WARNING: gdk-pixbuf-query-loaders not found"
 fi
 if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
-    echo "Warning: loaders.cache file is missing"
+    echo "WARNING: loaders.cache file is missing"
 fi
 
 echo "Copying more libraries"
