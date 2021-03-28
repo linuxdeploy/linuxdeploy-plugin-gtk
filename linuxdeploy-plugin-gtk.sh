@@ -91,7 +91,7 @@ else
     exit 1
 fi
 
-if ! which patchelf &>/dev/null && ! type patchelf &>/dev/null; then
+if ! command -v patchelf &>/dev/null && ! type patchelf &>/dev/null; then
     echo -e "$0: patchelf not found.\nInstall patchelf then re-run the plugin."
     exit 1
 fi
