@@ -91,7 +91,7 @@ else
     exit 1
 fi
 
-if ! which patchelf &>/dev/null && ! type patchelf &>/dev/null; then
+if ! command -v patchelf &>/dev/null && ! type patchelf &>/dev/null; then
     echo -e "$0: patchelf not found.\nInstall patchelf then re-run the plugin."
     exit 1
 fi
@@ -178,12 +178,10 @@ fi
 
 echo "Copying more libraries"
 gobject_libdir="$("$PKG_CONFIG" --variable=libdir gobject-2.0)"
-gio_libdir="$("$PKG_CONFIG" --variable=libdir gio-2.0)"
 librsvg_libdir="$("$PKG_CONFIG" --variable=libdir librsvg-2.0)"
 FIND_ARRAY=(
     "$gdk_libdir"     "libgdk_pixbuf-*.so*"
     "$gobject_libdir" "libgobject-*.so*"
-    "$gio_libdir"     "libgio-*.so*"
     "$librsvg_libdir" "librsvg-*.so*"
 )
 LIBRARIES=()
