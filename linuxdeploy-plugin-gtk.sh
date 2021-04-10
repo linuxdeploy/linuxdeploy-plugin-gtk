@@ -180,11 +180,17 @@ echo "Copying more libraries"
 gobject_libdir="$("$PKG_CONFIG" --variable=libdir gobject-2.0)"
 gio_libdir="$("$PKG_CONFIG" --variable=libdir gio-2.0)"
 librsvg_libdir="$("$PKG_CONFIG" --variable=libdir librsvg-2.0)"
+pango_libdir="$("$PKG_CONFIG" --variable=libdir pango)"
+pangocairo_libdir="$("$PKG_CONFIG" --variable=libdir pangocairo)"
+pangoft2_libdir="$("$PKG_CONFIG" --variable=libdir pangoft2)"
 FIND_ARRAY=(
     "$gdk_libdir"     "libgdk_pixbuf-*.so*"
     "$gobject_libdir" "libgobject-*.so*"
     "$gio_libdir"     "libgio-*.so*"
     "$librsvg_libdir" "librsvg-*.so*"
+    "$pango_libdir"      "libpango-*.so*"
+    "$pangocairo_libdir" "libpangocairo-*.so*"
+    "$pangoft2_libdir"   "libpangoft2-*.so*"
 )
 LIBRARIES=()
 for (( i=0; i<${#FIND_ARRAY[@]}; i+=2 )); do
