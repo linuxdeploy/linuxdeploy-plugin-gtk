@@ -108,6 +108,11 @@ else
     exit 1
 fi
 
+if ! command -v find &>/dev/null && ! type find &>/dev/null; then
+    echo -e "$0: find not found.\nInstall findutils then re-run the plugin."
+    exit 1
+fi
+
 if ! command -v patchelf &>/dev/null && ! type patchelf &>/dev/null; then
     echo -e "$0: patchelf not found.\nInstall patchelf then re-run the plugin."
     exit 1
