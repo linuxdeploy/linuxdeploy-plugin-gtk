@@ -1,0 +1,23 @@
+# GTK4 is not yet supported on openSUSE Leap
+FROM docker.io/opensuse/tumbleweed:latest AS build-stage
+WORKDIR /linuxdeploy
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+ARG APPDIR=/AppDir
+RUN zypper install -y wget patchelf librsvg2-devel file findutils pkg-config gtk4 gtk4-devel
+COPY . .
+ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
+RUN chmod +x *.sh *.AppImage
+RUN ./linuxdeploy-x86_64.AppImage \
+    --appdir ${APPDIR} \
+    --plugin gtk \
+    --output appimage \
+    --executable /usr/bin/gtk4-widget-factory \
+    --desktop-file /usr/share/applications/org.gtk.WidgetFactory4.desktop \
+    --icon-file /usr/share/icons/hicolor/scalable/apps/org.gtk.WidgetFactory4.svg
+
+FROM docker.io/opensuse/tumbleweed:latest
+VOLUME ["/AppImage"]
+WORKDIR /AppImage
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+COPY --from=build-stage "/linuxdeploy/Widget_Factory-x86_64.AppImage" .
+ENTRYPOINT ["./Widget_Factory-x86_64.AppImage"]
