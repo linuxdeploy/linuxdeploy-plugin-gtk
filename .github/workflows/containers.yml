@@ -1,0 +1,37 @@
+name: Containers
+
+on: [push, pull_request]
+
+jobs:
+  containers:
+    name: Buildah
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        gtk-version: [gtk3, gtk4]
+        linux-distro: [debian, fedora, opensuse, ubuntu]
+    env:
+      GTK_VERSION: ${{ matrix.gtk-version }}
+      LINUX_DISTRO: ${{ matrix.linux-distro }}
+      ARTIFACT_DIR: "${{ github.workspace }}/AppImages"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build container
+        run: |
+          mkdir -pv "${ARTIFACT_DIR}"
+          buildah bud \
+            --squash \
+            -v "${ARTIFACT_DIR}:/AppImage:rw,z,U" \
+            -t "linuxdeploy-plugin-${GTK_VERSION}:${LINUX_DISTRO}" \
+            -f "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" \
+            .
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: "${LINUX_DISTRO} with ${GTK_VERSION}"
+          path: "${ARTIFACT_DIR}/"
+          retention-days: 30
