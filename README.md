@@ -1,6 +1,6 @@
 # linuxdeploy-plugin-gtk
 
-This is an (as of yet experimental) plugin for linuxdeploy. Its job is to bundle additional resources for applications that use Gtk+ 2 or 3, and for common dependencies. Those involve GLib schemas for instance.
+This is an (as of yet experimental) plugin for linuxdeploy. Its job is to bundle additional resources for applications that use GTK, and for common dependencies. Those involve GLib schemas for instance.
 
 
 ## Usage

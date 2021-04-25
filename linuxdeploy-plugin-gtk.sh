@@ -1,4 +1,6 @@
 #! /bin/bash
+# GTK3 environment variables: https://developer.gnome.org/gtk3/stable/gtk-running.html
+# GTK4 environment variables: https://developer.gnome.org/gtk4/stable/gtk-running.html
 
 # abort on all errors
 set -e
@@ -13,7 +15,24 @@ script=$(readlink -f "$0")
 show_usage() {
     echo "Usage: $script --appdir <path to AppDir>"
     echo
-    echo "Bundles resources for applications that use Gtk 2 or 3 into an AppDir"
+    echo "Bundles resources for applications that use GTK into an AppDir"
+    echo
+    echo "Required variables:"
+    echo "  LINUXDEPLOY=\".../linuxdeploy\" path to linuxdeploy (e.g., AppImage); set automatically when plugin is run directly by linuxdeploy"
+    echo
+    echo "Optional variables:"
+    echo "  DEPLOY_GTK3=1 (default: auto-detect; deploy GTK3 application)"
+    echo "  DEPLOY_GTK4=1 (default: auto-detect; deploy GTK4 application)"
+}
+
+variable_is_true() {
+    local var="$1"
+
+    if [ -n "$var" ] && { [ "$var" == "true" ] || [ "$var" -gt 0 ]; } 2> /dev/null; then
+        return 0 # true
+    else
+        return 1 # false
+    fi
 }
 
 get_pkgconf_variable() {
@@ -67,6 +86,8 @@ search_tool() {
 }
 
 APPDIR=
+DEPLOY_GTK3="${DEPLOY_GTK3:-false}"
+DEPLOY_GTK4="${DEPLOY_GTK4:-false}"
 
 while [ "$1" != "" ]; do
     case "$1" in
@@ -123,6 +144,23 @@ if [ -z "$LINUXDEPLOY" ]; then
     exit 1
 fi
 
+if ! variable_is_true "$DEPLOY_GTK3" && ! variable_is_true "$DEPLOY_GTK4"; then
+    echo "Determining which GTK version to deploy"
+    while IFS= read -r -d '' file; do
+        if ldd "$file" | grep -q "libgtk-3.so"; then
+            DEPLOY_GTK3=true
+        fi
+        if ldd "$file" | grep -q "libgtk-4.so"; then
+            DEPLOY_GTK4=true
+        fi
+    done < <(find "$APPDIR/usr/bin" -executable -type f -print0)
+fi
+
+if variable_is_true "$DEPLOY_GTK3" && variable_is_true "$DEPLOY_GTK4"; then
+    echo -e "$0: can not deploy multiple GTK versions.\nSet only DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
+    exit 1
+fi
+
 echo "Installing AppRun hook"
 HOOKSDIR="$APPDIR/apprun-hooks"
 HOOKFILE="$HOOKSDIR/linuxdeploy-plugin-gtk.sh"
@@ -150,29 +188,44 @@ cat >> "$HOOKFILE" <<EOF
 export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
-echo "Installing GTK 3.0 modules"
-gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
-gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
-gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
-gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/printbackends"
-gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
-gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
-copy_tree "$gtk3_libdir" "$APPDIR/"
-cat >> "$HOOKFILE" <<EOF
+if variable_is_true "$DEPLOY_GTK3"; then
+    echo "Installing GTK 3.0 modules"
+    gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
+    gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
+    gtk3_path="$gtk3_libdir/modules"
+    gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
+    gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
+    gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
+    copy_tree "$gtk3_libdir" "$APPDIR/"
+    cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
-export GTK_PATH="\$APPDIR/$gtk3_libdir"
+export GTK_PATH="\$APPDIR/$gtk3_path"
 export GTK_IM_MODULE_DIR="\$APPDIR/$gtk3_immodulesdir"
 export GTK_IM_MODULE_FILE="\$CACHEDIR/immodules.cache"
 sed "s|$gtk3_libdir|\$APPDIR/$gtk3_libdir|g" "\$APPDIR/$gtk3_immodules_cache_file" > "\$GTK_IM_MODULE_FILE"
 EOF
-if [ -x "$gtk3_immodules_query" ]; then
-    echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
-    "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
+    if [ -x "$gtk3_immodules_query" ]; then
+        echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
+        "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
+    else
+        echo "WARNING: gtk-query-immodules-3.0 not found"
+    fi
+    if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
+        echo "WARNING: immodules.cache file is missing"
+    fi
+elif variable_is_true "$DEPLOY_GTK4"; then
+    echo "Installing GTK 4.0 modules"
+    gtk4_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk4" "/usr")"
+    gtk4_libdir="$(get_pkgconf_variable "libdir" "gtk4")/gtk-4.0"
+    gtk4_path="$gtk4_libdir/modules"
+    copy_tree "$gtk4_libdir" "$APPDIR/"
+    cat >> "$HOOKFILE" <<EOF
+export GTK_EXE_PREFIX="\$APPDIR/$gtk4_exec_prefix"
+export GTK_PATH="\$APPDIR/$gtk4_path"
+EOF
 else
-    echo "WARNING: gtk-query-immodules-3.0 not found"
-fi
-if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
-    echo "WARNING: immodules.cache file is missing"
+    echo -e "$0: no GTK version detected.\nSet DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
+    exit 1
 fi
 
 echo "Installing GDK PixBufs"
