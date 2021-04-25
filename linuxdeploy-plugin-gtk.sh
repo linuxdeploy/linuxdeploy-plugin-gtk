@@ -21,8 +21,9 @@ show_usage() {
     echo "  LINUXDEPLOY=\".../linuxdeploy\" path to linuxdeploy (e.g., AppImage); set automatically when plugin is run directly by linuxdeploy"
     echo
     echo "Optional variables:"
-    echo "  DEPLOY_GTK3=1 (default: auto-detect; deploy GTK3 application)"
-    echo "  DEPLOY_GTK4=1 (default: auto-detect; deploy GTK4 application)"
+    echo "  DEPLOY_GTK2=1 (default: auto-detect; deploy GTK+ 2 application)"
+    echo "  DEPLOY_GTK3=1 (default: auto-detect; deploy GTK+ 3 application)"
+    echo "  DEPLOY_GTK4=1 (default: auto-detect; deploy GTK 4 application)"
 }
 
 variable_is_true() {
@@ -86,6 +87,7 @@ search_tool() {
 }
 
 APPDIR=
+DEPLOY_GTK2="${DEPLOY_GTK2:-false}"
 DEPLOY_GTK3="${DEPLOY_GTK3:-false}"
 DEPLOY_GTK4="${DEPLOY_GTK4:-false}"
 
@@ -144,9 +146,12 @@ if [ -z "$LINUXDEPLOY" ]; then
     exit 1
 fi
 
-if ! variable_is_true "$DEPLOY_GTK3" && ! variable_is_true "$DEPLOY_GTK4"; then
+if ! variable_is_true "$DEPLOY_GTK2" && ! variable_is_true "$DEPLOY_GTK3" && ! variable_is_true "$DEPLOY_GTK4"; then
     echo "Determining which GTK version to deploy"
     while IFS= read -r -d '' file; do
+        if ldd "$file" | grep -q "libgtk-x11-2.0.so"; then
+            DEPLOY_GTK2=true
+        fi
         if ldd "$file" | grep -q "libgtk-3.so"; then
             DEPLOY_GTK3=true
         fi
@@ -156,8 +161,12 @@ if ! variable_is_true "$DEPLOY_GTK3" && ! variable_is_true "$DEPLOY_GTK4"; then
     done < <(find "$APPDIR/usr/bin" -executable -type f -print0)
 fi
 
-if variable_is_true "$DEPLOY_GTK3" && variable_is_true "$DEPLOY_GTK4"; then
-    echo -e "$0: can not deploy multiple GTK versions.\nSet only DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
+gtk_versions=0
+variable_is_true "$DEPLOY_GTK2" && gtk_versions="$((gtk_versions+1))"
+variable_is_true "$DEPLOY_GTK3" && gtk_versions="$((gtk_versions+1))"
+variable_is_true "$DEPLOY_GTK4" && gtk_versions="$((gtk_versions+1))"
+if [ "$gtk_versions" -gt 1 ]; then
+    echo -e "$0: can not deploy multiple GTK versions.\nSet only DEPLOY_GTK2, DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
     exit 1
 fi
 
@@ -188,7 +197,10 @@ cat >> "$HOOKFILE" <<EOF
 export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
-if variable_is_true "$DEPLOY_GTK3"; then
+if variable_is_true "$DEPLOY_GTK2"; then
+    # https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/pull/20#issuecomment-826354261
+    echo "WARNING: Gtk+2 applications are not fully supported by this plugin"
+elif variable_is_true "$DEPLOY_GTK3"; then
     echo "Installing GTK 3.0 modules"
     gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
     gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
@@ -224,7 +236,7 @@ export GTK_EXE_PREFIX="\$APPDIR/$gtk4_exec_prefix"
 export GTK_PATH="\$APPDIR/$gtk4_path"
 EOF
 else
-    echo -e "$0: no GTK version detected.\nSet DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
+    echo -e "$0: no GTK version detected.\nSet DEPLOY_GTK2, DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
     exit 1
 fi
 
