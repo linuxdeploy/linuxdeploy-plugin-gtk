@@ -200,7 +200,8 @@ for (( i=0; i<${#FIND_ARRAY[@]}; i+=2 )); do
         LIBRARIES+=( "--library=$file" )
     done < <(find "$directory" \( -type l -o -type f \) -name "$library" -print0)
 done
-"$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
+
+env LINUXDEPLOY_PLUGIN_MODE=1 "$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
 
 echo "Manually setting rpath for GTK modules"
 PATCH_ARRAY=(
