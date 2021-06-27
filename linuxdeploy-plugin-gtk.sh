@@ -21,9 +21,7 @@ show_usage() {
     echo "  LINUXDEPLOY=\".../linuxdeploy\" path to linuxdeploy (e.g., AppImage); set automatically when plugin is run directly by linuxdeploy"
     echo
     echo "Optional variables:"
-    echo "  DEPLOY_GTK2=1 (default: auto-detect; deploy GTK+ 2 application)"
-    echo "  DEPLOY_GTK3=1 (default: auto-detect; deploy GTK+ 3 application)"
-    echo "  DEPLOY_GTK4=1 (default: auto-detect; deploy GTK 4 application)"
+    echo "  DEPLOY_GTK_VERSION (major version of GTK to deploy, e.g. '2', '3' or '4'; auto-detect by default)"
 }
 
 variable_is_true() {
@@ -87,9 +85,7 @@ search_tool() {
 }
 
 APPDIR=
-DEPLOY_GTK2="${DEPLOY_GTK2:-false}"
-DEPLOY_GTK3="${DEPLOY_GTK3:-false}"
-DEPLOY_GTK4="${DEPLOY_GTK4:-false}"
+DEPLOY_GTK_VERSION="${DEPLOY_GTK_VERSION:-0}"
 
 while [ "$1" != "" ]; do
     case "$1" in
@@ -146,27 +142,32 @@ if [ -z "$LINUXDEPLOY" ]; then
     exit 1
 fi
 
-if ! variable_is_true "$DEPLOY_GTK2" && ! variable_is_true "$DEPLOY_GTK3" && ! variable_is_true "$DEPLOY_GTK4"; then
+gtk_versions=0 # Count major versions of GTK when auto-detect GTK version
+if [ "$DEPLOY_GTK_VERSION" -eq 0 ]; then
     echo "Determining which GTK version to deploy"
     while IFS= read -r -d '' file; do
-        if ldd "$file" | grep -q "libgtk-x11-2.0.so"; then
-            DEPLOY_GTK2=true
+        if [ "$DEPLOY_GTK_VERSION" -ne 2 ] && ldd "$file" | grep -q "libgtk-x11-2.0.so"; then
+            DEPLOY_GTK_VERSION=2
+            gtk_versions="$((gtk_versions+1))"
         fi
-        if ldd "$file" | grep -q "libgtk-3.so"; then
-            DEPLOY_GTK3=true
+        if [ "$DEPLOY_GTK_VERSION" -ne 3 ] && ldd "$file" | grep -q "libgtk-3.so"; then
+            DEPLOY_GTK_VERSION=3
+            gtk_versions="$((gtk_versions+1))"
         fi
-        if ldd "$file" | grep -q "libgtk-4.so"; then
-            DEPLOY_GTK4=true
+        if [ "$DEPLOY_GTK_VERSION" -ne 4 ] && ldd "$file" | grep -q "libgtk-4.so"; then
+            DEPLOY_GTK_VERSION=4
+            gtk_versions="$((gtk_versions+1))"
         fi
     done < <(find "$APPDIR/usr/bin" -executable -type f -print0)
 fi
 
-gtk_versions=0
-variable_is_true "$DEPLOY_GTK2" && gtk_versions="$((gtk_versions+1))"
-variable_is_true "$DEPLOY_GTK3" && gtk_versions="$((gtk_versions+1))"
-variable_is_true "$DEPLOY_GTK4" && gtk_versions="$((gtk_versions+1))"
 if [ "$gtk_versions" -gt 1 ]; then
-    echo -e "$0: can not deploy multiple GTK versions.\nSet only DEPLOY_GTK2, DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
+    echo "$0: can not deploy multiple GTK versions at the same time."
+    echo "Please set DEPLOY_GTK_VERSION to {2, 3, 4}."
+    exit 1
+elif [ "$DEPLOY_GTK_VERSION" -eq 0 ]; then
+    echo "$0: failed to auto-detect GTK version."
+    echo "Please set DEPLOY_GTK_VERSION to {2, 3, 4}."
     exit 1
 fi
 
@@ -197,48 +198,53 @@ cat >> "$HOOKFILE" <<EOF
 export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
-if variable_is_true "$DEPLOY_GTK2"; then
-    # https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/pull/20#issuecomment-826354261
-    echo "WARNING: Gtk+2 applications are not fully supported by this plugin"
-elif variable_is_true "$DEPLOY_GTK3"; then
-    echo "Installing GTK 3.0 modules"
-    gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
-    gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
-    gtk3_path="$gtk3_libdir/modules"
-    gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
-    gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
-    gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
-    copy_tree "$gtk3_libdir" "$APPDIR/"
-    cat >> "$HOOKFILE" <<EOF
+case "$DEPLOY_GTK_VERSION" in
+    2)
+        # https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/pull/20#issuecomment-826354261
+        echo "WARNING: Gtk+2 applications are not fully supported by this plugin"
+        ;;
+    3)
+        echo "Installing GTK 3.0 modules"
+        gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
+        gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
+        gtk3_path="$gtk3_libdir/modules"
+        gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
+        gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
+        gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
+        copy_tree "$gtk3_libdir" "$APPDIR/"
+        cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
 export GTK_PATH="\$APPDIR/$gtk3_path"
 export GTK_IM_MODULE_DIR="\$APPDIR/$gtk3_immodulesdir"
 export GTK_IM_MODULE_FILE="\$CACHEDIR/immodules.cache"
 sed "s|$gtk3_libdir|\$APPDIR/$gtk3_libdir|g" "\$APPDIR/$gtk3_immodules_cache_file" > "\$GTK_IM_MODULE_FILE"
 EOF
-    if [ -x "$gtk3_immodules_query" ]; then
-        echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
-        "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
-    else
-        echo "WARNING: gtk-query-immodules-3.0 not found"
-    fi
-    if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
-        echo "WARNING: immodules.cache file is missing"
-    fi
-elif variable_is_true "$DEPLOY_GTK4"; then
-    echo "Installing GTK 4.0 modules"
-    gtk4_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk4" "/usr")"
-    gtk4_libdir="$(get_pkgconf_variable "libdir" "gtk4")/gtk-4.0"
-    gtk4_path="$gtk4_libdir/modules"
-    copy_tree "$gtk4_libdir" "$APPDIR/"
-    cat >> "$HOOKFILE" <<EOF
+        if [ -x "$gtk3_immodules_query" ]; then
+            echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
+            "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
+        else
+            echo "WARNING: gtk-query-immodules-3.0 not found"
+        fi
+        if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
+            echo "WARNING: immodules.cache file is missing"
+        fi
+        ;;
+    4)
+        echo "Installing GTK 4.0 modules"
+        gtk4_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk4" "/usr")"
+        gtk4_libdir="$(get_pkgconf_variable "libdir" "gtk4")/gtk-4.0"
+        gtk4_path="$gtk4_libdir/modules"
+        copy_tree "$gtk4_libdir" "$APPDIR/"
+        cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk4_exec_prefix"
 export GTK_PATH="\$APPDIR/$gtk4_path"
 EOF
-else
-    echo -e "$0: no GTK version detected.\nSet DEPLOY_GTK2, DEPLOY_GTK3 or DEPLOY_GTK4 environment variable."
-    exit 1
-fi
+        ;;
+    *)
+        echo "$0: '$DEPLOY_GTK_VERSION' is not a valid GTK major version."
+        echo "Please set DEPLOY_GTK_VERSION to {2, 3, 4}."
+        exit 1
+esac
 
 echo "Installing GDK PixBufs"
 gdk_libdir="$(get_pkgconf_variable "libdir" "gdk-pixbuf-2.0")"
