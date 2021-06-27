@@ -1,0 +1,22 @@
+FROM docker.io/opensuse/leap:15 AS build-stage
+WORKDIR /linuxdeploy
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+ARG APPDIR=/AppDir
+RUN zypper install -y wget patchelf librsvg2-devel file findutils pkg-config gtk3 gtk3-devel
+COPY . .
+ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
+RUN chmod +x *.sh *.AppImage
+RUN ./linuxdeploy-x86_64.AppImage \
+    --appdir ${APPDIR} \
+    --plugin gtk \
+    --output appimage \
+    --executable /usr/bin/gtk3-widget-factory \
+    --desktop-file /usr/share/applications/gtk3-widget-factory.desktop \
+    --icon-file /usr/share/icons/hicolor/256x256/apps/gtk3-widget-factory.png
+
+FROM docker.io/opensuse/leap:15
+VOLUME ["/AppImage"]
+WORKDIR /AppImage
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+COPY --from=build-stage "/linuxdeploy/Widget_Factory-x86_64.AppImage" .
+ENTRYPOINT ["./Widget_Factory-x86_64.AppImage"]
