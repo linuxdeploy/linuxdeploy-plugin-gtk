@@ -16,6 +16,23 @@ show_usage() {
     echo "Bundles resources for applications that use Gtk 2 or 3 into an AppDir"
 }
 
+get_pkgconf_variable() {
+    local variable="$1"
+    local library="$2"
+    local default_path="$3"
+
+    path="$("$PKG_CONFIG" --variable="$variable" "$library")"
+    if [ -n "$path" ]; then
+        echo "$path"
+    elif [ -n "$default_path" ]; then
+        echo "$default_path"
+    else
+        echo "$0: there is no '$variable' variable for '$library' library." > /dev/stderr
+        echo "Please check the '$library.pc' file is present in \$PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package)." > /dev/stderr
+        exit 1
+    fi
+}
+
 copy_tree() {
     local src=("${@:1:$#-1}")
     local dst="${*:$#}"
@@ -120,8 +137,8 @@ export XDG_DATA_DIRS="$APPDIR/usr/share:/usr/share:$XDG_DATA_DIRS" # g_get_syste
 EOF
 
 echo "Installing GLib schemas"
-glib_schemasdir="$("$PKG_CONFIG" --variable=schemasdir gio-2.0)"
-[ -z "$glib_schemasdir" ] && glib_schemasdir="/usr/share/glib-2.0/schemas" # Fix for Ubuntu 16.04
+# Note: schemasdir is undefined on Ubuntu 16.04
+glib_schemasdir="$(get_pkgconf_variable "schemasdir" "gio-2.0" "/usr/share/glib-2.0/schemas")"
 copy_tree "$glib_schemasdir" "$APPDIR/"
 glib-compile-schemas "$APPDIR/$glib_schemasdir"
 cat >> "$HOOKFILE" <<EOF
@@ -129,10 +146,10 @@ export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
 echo "Installing GTK 3.0 modules"
-gtk3_exec_prefix="$("$PKG_CONFIG" --variable=exec_prefix gtk+-3.0)"
-gtk3_libdir="$("$PKG_CONFIG" --variable=libdir gtk+-3.0)/gtk-3.0"
-gtk3_immodulesdir="$gtk3_libdir/$("$PKG_CONFIG" --variable=gtk_binary_version gtk+-3.0)/immodules"
-gtk3_printbackendsdir="$gtk3_libdir/$("$PKG_CONFIG" --variable=gtk_binary_version gtk+-3.0)/printbackends"
+gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
+gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
+gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
+gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/printbackends"
 gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
 gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
 copy_tree "$gtk3_libdir" "$APPDIR/"
@@ -154,10 +171,10 @@ if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
 fi
 
 echo "Installing GDK PixBufs"
-gdk_libdir="$("$PKG_CONFIG" --variable=libdir gdk-pixbuf-2.0)"
-gdk_pixbuf_binarydir="$("$PKG_CONFIG" --variable=gdk_pixbuf_binarydir gdk-pixbuf-2.0)"
-gdk_pixbuf_cache_file="$("$PKG_CONFIG" --variable=gdk_pixbuf_cache_file gdk-pixbuf-2.0)"
-gdk_pixbuf_moduledir="$("$PKG_CONFIG" --variable=gdk_pixbuf_moduledir gdk-pixbuf-2.0)"
+gdk_libdir="$(get_pkgconf_variable "libdir" "gdk-pixbuf-2.0")"
+gdk_pixbuf_binarydir="$(get_pkgconf_variable "gdk_pixbuf_binarydir" "gdk-pixbuf-2.0")"
+gdk_pixbuf_cache_file="$(get_pkgconf_variable "gdk_pixbuf_cache_file" "gdk-pixbuf-2.0")"
+gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-2.0")"
 # Note: gdk_pixbuf_query_loaders variable is not defined on some systems
 gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
 copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
@@ -177,12 +194,12 @@ if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
 fi
 
 echo "Copying more libraries"
-gobject_libdir="$("$PKG_CONFIG" --variable=libdir gobject-2.0)"
-gio_libdir="$("$PKG_CONFIG" --variable=libdir gio-2.0)"
-librsvg_libdir="$("$PKG_CONFIG" --variable=libdir librsvg-2.0)"
-pango_libdir="$("$PKG_CONFIG" --variable=libdir pango)"
-pangocairo_libdir="$("$PKG_CONFIG" --variable=libdir pangocairo)"
-pangoft2_libdir="$("$PKG_CONFIG" --variable=libdir pangoft2)"
+gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0")"
+gio_libdir="$(get_pkgconf_variable "libdir" "gio-2.0")"
+librsvg_libdir="$(get_pkgconf_variable "libdir" "librsvg-2.0")"
+pango_libdir="$(get_pkgconf_variable "libdir" "pango")"
+pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo")"
+pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2")"
 FIND_ARRAY=(
     "$gdk_libdir"     "libgdk_pixbuf-*.so*"
     "$gobject_libdir" "libgobject-*.so*"
