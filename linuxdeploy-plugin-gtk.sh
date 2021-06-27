@@ -84,8 +84,8 @@ search_tool() {
     done
 }
 
+DEPLOY_GTK_VERSION="${DEPLOY_GTK_VERSION:-0}" # When not set by user, this variable use the integer '0' as a sentinel value
 APPDIR=
-DEPLOY_GTK_VERSION="${DEPLOY_GTK_VERSION:-0}"
 
 while [ "$1" != "" ]; do
     case "$1" in
