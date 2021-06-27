@@ -4,13 +4,14 @@ on: [push, pull_request]
 
 jobs:
   containers:
-    name: Buildah
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
         gtk-version: [gtk3, gtk4]
         linux-distro: [debian, fedora, opensuse, ubuntu]
+
+    name: ${{ matrix.linux-distro }} ${{ matrix.gtk-version }}
+    runs-on: ubuntu-latest
+
     env:
       GTK_VERSION: ${{ matrix.gtk-version }}
       LINUX_DISTRO: ${{ matrix.linux-distro }}
