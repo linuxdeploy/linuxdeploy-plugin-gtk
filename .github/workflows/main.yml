@@ -17,6 +17,7 @@ jobs:
       run: |
         echo "REPODIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
         echo "APPDIR=/tmp/AppDir"        >> $GITHUB_ENV
+        echo "DEPLOY_GTK_VERSION=3"      >> $GITHUB_ENV
 
     - name: Setup dependencies
       run: |
@@ -32,7 +33,7 @@ jobs:
 
     - name: Run test script
       run: |
-        mkdir -pv "$APPDIR"
+        mkdir -pv "$APPDIR/usr/bin"
         ./test-plugins.sh
 
     - name: Display files inside AppDir
