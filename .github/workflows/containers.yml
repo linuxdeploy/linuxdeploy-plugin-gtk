@@ -33,6 +33,6 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: "${LINUX_DISTRO} with ${GTK_VERSION}"
-          path: "${ARTIFACT_DIR}/"
+          name: ${{ matrix.linux-distro }} with ${{ matrix.gtk-version }}
+          path: ${{ env.ARTIFACT_DIR }}/
           retention-days: 30
