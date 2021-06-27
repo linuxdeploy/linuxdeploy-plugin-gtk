@@ -26,7 +26,7 @@ jobs:
           mkdir -pv "${ARTIFACT_DIR}"
           buildah bud \
             --squash \
-            -v "${ARTIFACT_DIR}:/AppImage:rw,z,U" \
+            -v "${ARTIFACT_DIR}:/AppImage:rw,z,shared" \
             -t "linuxdeploy-plugin-${GTK_VERSION}:${LINUX_DISTRO}" \
             -f "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" \
             .
