@@ -53,6 +53,7 @@ search_tool() {
     PATH_ARRAY=(
         "/usr/lib/$(uname -m)-linux-gnu/$directory/$tool"
         "/usr/lib/$directory/$tool"
+        "/usr/lib64/$directory/$tool"#fedora
         "/usr/bin/$tool"
         "/usr/bin/$tool-64"
         "/usr/bin/$tool-32"
@@ -232,3 +233,8 @@ for directory in "${PATCH_ARRAY[@]}"; do
         patchelf --set-rpath '$ORIGIN/../../../..' "$APPDIR/$file"
     done < <(find "$directory" -name '*.so' -print0)
 done
+
+#binary patch absolute paths
+#find usr/lib/ -type f -exec sed -i -e "s|/usr|././|g" {} \;
+#binary patch absolute paths in libwebkit files
+find usr/lib* -name libwebkit* -exec sed -i -e "s|/usr|././|g" '{}' \;
