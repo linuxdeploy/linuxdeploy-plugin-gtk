@@ -235,6 +235,6 @@ for directory in "${PATCH_ARRAY[@]}"; do
 done
 
 #binary patch absolute paths
-#find usr/lib/ -type f -exec sed -i -e "s|/usr|././|g" {} \;
+#find $APPDIR/usr/lib/ -type f -exec sed -i -e "s|/usr|././|g" {} \;
 #binary patch absolute paths in libwebkit files
-find usr/lib* -name libwebkit* -exec sed -i -e "s|/usr|././|g" '{}' \;
+find $APPDIR/usr/lib* -name libwebkit* -exec sed -i -e "s|/usr|././|g" '{}' \;
