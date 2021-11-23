@@ -53,7 +53,6 @@ search_tool() {
     PATH_ARRAY=(
         "/usr/lib/$(uname -m)-linux-gnu/$directory/$tool"
         "/usr/lib/$directory/$tool"
-        "/usr/lib64/$directory/$tool"#fedora
         "/usr/bin/$tool"
         "/usr/bin/$tool-64"
         "/usr/bin/$tool-32"
