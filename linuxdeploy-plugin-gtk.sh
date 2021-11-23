@@ -98,6 +98,8 @@ if [ "$APPDIR" == "" ]; then
 fi
 
 mkdir -p "$APPDIR"
+# make lib64 writable again.
+chmod +w "$APPDIR"/usr/lib64
 
 if command -v pkgconf > /dev/null; then
     PKG_CONFIG="pkgconf"
@@ -233,7 +235,7 @@ for directory in "${PATCH_ARRAY[@]}"; do
     done < <(find "$directory" -name '*.so' -print0)
 done
 
-#binary patch absolute paths
-#find $APPDIR/usr/lib/ -type f -exec sed -i -e "s|/usr|././|g" {} \;
+# set write permission on lib64 again to make it deletable.
+chmod +w "$APPDIR"/usr/lib64
 #binary patch absolute paths in libwebkit files
 find $APPDIR/usr/lib* -name libwebkit* -exec sed -i -e "s|/usr|././|g" '{}' \;
