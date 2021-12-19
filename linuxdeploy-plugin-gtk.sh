@@ -1,4 +1,5 @@
-#! /bin/bash
+#! /usr/bin/env bash
+
 # GTK3 environment variables: https://developer.gnome.org/gtk3/stable/gtk-running.html
 # GTK4 environment variables: https://developer.gnome.org/gtk4/stable/gtk-running.html
 
@@ -180,7 +181,7 @@ cat > "$HOOKFILE" <<\EOF
 
 gsettings get org.gnome.desktop.interface gtk-theme 2> /dev/null | grep -qi "dark" && GTK_THEME_VARIANT="dark" || GTK_THEME_VARIANT="light"
 APPIMAGE_GTK_THEME="${APPIMAGE_GTK_THEME:-"Adwaita:$GTK_THEME_VARIANT"}" # Allow user to override theme (discouraged)
-CACHEDIR="$(mktemp --tmpdir --directory .AppRun.XXXXXXXX)"
+CACHEDIR="$(mktemp -d /tmp/.AppRun.XXXXXXXX)"
 
 export APPDIR="${APPDIR:-"$(dirname "$(realpath "$0")")"}" # Workaround to run extracted AppImage
 export GTK_DATA_PREFIX="$APPDIR"
