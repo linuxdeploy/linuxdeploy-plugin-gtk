@@ -7,13 +7,13 @@ jobs:
     name: Linux x64_64
     runs-on: ubuntu-latest
 
+    env:
+      REPODIR: "${{ github.workspace }}"
+      APPDIR: "/tmp/AppDir"
+      DEPLOY_GTK_VERSION: 3
+
     steps:
     - uses: actions/checkout@v2
-
-    - name: Set environment variables
-      run: |
-        echo "REPODIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-        echo "APPDIR=/tmp/AppDir"        >> $GITHUB_ENV
 
     - name: Setup dependencies
       run: |
@@ -29,7 +29,7 @@ jobs:
 
     - name: Run test script
       run: |
-        mkdir -pv "$APPDIR"
+        mkdir -pv "$APPDIR/usr/bin"
         ./test-plugins.sh
 
     - name: Display files inside AppDir
