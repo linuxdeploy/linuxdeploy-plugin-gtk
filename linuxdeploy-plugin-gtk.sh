@@ -20,9 +20,9 @@ show_usage() {
     echo
     echo "Required variables:"
     echo "  LINUXDEPLOY=\".../linuxdeploy\" path to linuxdeploy (e.g., AppImage); set automatically when plugin is run directly by linuxdeploy"
-    echo
-    echo "Optional variables:"
-    echo "  DEPLOY_GTK_VERSION (major version of GTK to deploy, e.g. '2', '3' or '4'; auto-detect by default)"
+    #echo
+    #echo "Optional variables:"
+    #echo "  DEPLOY_GTK_VERSION (major version of GTK to deploy, e.g. '2', '3' or '4'; auto-detect by default)"
 }
 
 variable_is_true() {
@@ -85,7 +85,8 @@ search_tool() {
     done
 }
 
-DEPLOY_GTK_VERSION="${DEPLOY_GTK_VERSION:-0}" # When not set by user, this variable use the integer '0' as a sentinel value
+#DEPLOY_GTK_VERSION="${DEPLOY_GTK_VERSION:-0}" # When not set by user, this variable use the integer '0' as a sentinel value
+DEPLOY_GTK_VERSION=3 # Force GTK3 for tauri apps
 APPDIR=
 
 while [ "$1" != "" ]; do
