@@ -317,14 +317,14 @@ done
 chmod +w "$APPDIR"/usr/lib64 || true
 
 # We have to copy the files first to not get permission errors when we assign gio_extras_dir
-find /usr/lib* -name libgiognutls.so -exec mkdir -p "$APPDIR"/$(dirname '{}') \; -exec cp --parents '{}' "$APPDIR/" \; || true
+find /usr/lib* -name libgiognutls.so -exec mkdir -p "$APPDIR"/"$(dirname '{}')" \; -exec cp --parents '{}' "$APPDIR/" \; || true
 # related files that we seemingly don't need:
 # libgiolibproxy.so - libgiognomeproxy.so - glib-pacrunner
 
 gio_extras_dir=$(find "$APPDIR"/usr/lib* -name libgiognutls.so -exec dirname '{}' \; 2>/dev/null)
 cat >> "$HOOKFILE" <<EOF
-export GIO_EXTRA_MODULES="\$APPDIR/${gio_extras_dir#$APPDIR/}"
+export GIO_EXTRA_MODULES="\$APPDIR/${gio_extras_dir#"$APPDIR"/}"
 EOF
 
 #binary patch absolute paths in libwebkit files
-find $APPDIR/usr/lib* -name libwebkit* -exec sed -i -e "s|/usr|././|g" '{}' \;
+find "$APPDIR"/usr/lib* -name 'libwebkit*' -exec sed -i -e "s|/usr|././|g" '{}' \;
