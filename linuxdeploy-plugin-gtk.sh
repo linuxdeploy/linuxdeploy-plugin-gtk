@@ -185,12 +185,12 @@ APPIMAGE_GTK_THEME="${APPIMAGE_GTK_THEME:-"Adwaita:$GTK_THEME_VARIANT"}" # Allow
 # in case we run from an AppImage, we use the $APPDIR environment variable as a template for the temporary directory that should be created
 # this allows users to attribute the tempdir to the running AppImage
 if [ "$APPDIR" != "" ]; then
-    tempdir_template="$APPDIR".ld-p-gtk-tmp
+    tempdir_template="$APPDIR".ld-p-gtk-tmp-XXXXXX
 else
     tempdir_template=/tmp/.ld-p-gtk-tmp-XXXXXX
 fi
 
-CACHEDIR="$(mktemp -d "$tempdir_template")"
+export CACHEDIR="$(mktemp -d "$tempdir_template")"
 
 export APPDIR="${APPDIR:-"$(dirname "$(realpath "$0")")"}" # Workaround to run extracted AppImage
 export GTK_DATA_PREFIX="$APPDIR"
