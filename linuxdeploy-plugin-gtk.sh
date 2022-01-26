@@ -180,11 +180,20 @@ HOOKSDIR="$APPDIR/apprun-hooks"
 HOOKFILE="$HOOKSDIR/linuxdeploy-plugin-gtk.sh"
 mkdir -p "$HOOKSDIR"
 cat > "$HOOKFILE" <<\EOF
-#! /bin/bash
+#! /usr/bin/env bash
 
 gsettings get org.gnome.desktop.interface gtk-theme 2> /dev/null | grep -qi "dark" && GTK_THEME_VARIANT="dark" || GTK_THEME_VARIANT="light"
 APPIMAGE_GTK_THEME="${APPIMAGE_GTK_THEME:-"Adwaita:$GTK_THEME_VARIANT"}" # Allow user to override theme (discouraged)
-CACHEDIR="$(mktemp -d /tmp/.AppRun.XXXXXXXX)"
+
+# in case we run from an AppImage, we use the $APPDIR environment variable as a template for the temporary directory that should be created
+# this allows users to attribute the tempdir to the running AppImage
+if [ "$APPDIR" != "" ]; then
+    tempdir_template="$APPDIR".ld-p-gtk-tmp-XXXXXX
+else
+    tempdir_template=/tmp/.ld-p-gtk-tmp-XXXXXX
+fi
+
+export CACHEDIR="$(mktemp -d "$tempdir_template")"
 
 export APPDIR="${APPDIR:-"$(dirname "$(realpath "$0")")"}" # Workaround to run extracted AppImage
 export GTK_DATA_PREFIX="$APPDIR"
