@@ -133,11 +133,6 @@ if ! command -v find &>/dev/null && ! type find &>/dev/null; then
     exit 1
 fi
 
-if ! command -v patchelf &>/dev/null && ! type patchelf &>/dev/null; then
-    echo -e "$0: patchelf not found.\nInstall patchelf then re-run the plugin."
-    exit 1
-fi
-
 if [ -z "$LINUXDEPLOY" ]; then
     echo -e "$0: LINUXDEPLOY environment variable is not set.\nDownload a suitable linuxdeploy AppImage, set the environment variable and re-run the plugin."
     exit 1
@@ -296,6 +291,8 @@ done
 
 env LINUXDEPLOY_PLUGIN_MODE=1 "$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
 
+# Create symbolic links as a workaround
+# Details: https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/issues/24#issuecomment-1030026529
 echo "Manually setting rpath for GTK modules"
 PATCH_ARRAY=(
     "$gtk3_immodulesdir"
@@ -304,8 +301,6 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        # shellcheck disable=SC2016
-        patchelf --set-rpath '$ORIGIN' "$APPDIR/$file"
         ln $verbose -s "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done

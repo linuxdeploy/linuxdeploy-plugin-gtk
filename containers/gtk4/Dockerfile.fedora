@@ -2,7 +2,7 @@ FROM docker.io/fedora:latest AS build-stage
 WORKDIR /linuxdeploy
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ARG APPDIR=/AppDir
-RUN dnf install -y wget patchelf librsvg2-devel file findutils pkgconfig gtk4 gtk4-devel gtk4-devel-tools
+RUN dnf install -y wget librsvg2-devel file findutils pkgconfig gtk4 gtk4-devel gtk4-devel-tools
 COPY . .
 ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
 RUN chmod +x *.sh *.AppImage
