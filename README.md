@@ -6,7 +6,6 @@ This is an (as of yet experimental) plugin for linuxdeploy. Its job is to bundle
 
 This plugin requires the following dependencies in order to work properly:
 
-- `patchelf` command
 - `file` command
 - `find` command
 - `pkg-config` or `pkgconf` command
