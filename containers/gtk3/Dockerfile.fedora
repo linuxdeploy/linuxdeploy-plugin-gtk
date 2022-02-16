@@ -1,4 +1,4 @@
-FROM docker.io/fedora:33 AS build-stage
+FROM docker.io/fedora:latest AS build-stage
 WORKDIR /linuxdeploy
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ARG APPDIR=/AppDir
@@ -6,6 +6,7 @@ RUN dnf install -y wget patchelf librsvg2-devel file findutils pkgconfig gtk3 gt
 COPY . .
 ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
 RUN chmod +x *.sh *.AppImage
+RUN gtk-query-immodules-3.0-64 --update-cache
 RUN ./linuxdeploy-x86_64.AppImage \
     --appdir ${APPDIR} \
     --plugin gtk \
@@ -14,7 +15,7 @@ RUN ./linuxdeploy-x86_64.AppImage \
     --desktop-file /usr/share/applications/gtk3-widget-factory.desktop \
     --icon-file /usr/share/icons/hicolor/256x256/apps/gtk3-widget-factory.png
 
-FROM docker.io/fedora:33
+FROM docker.io/fedora:latest
 VOLUME ["/AppImage"]
 WORKDIR /AppImage
 ENV APPIMAGE_EXTRACT_AND_RUN=1
