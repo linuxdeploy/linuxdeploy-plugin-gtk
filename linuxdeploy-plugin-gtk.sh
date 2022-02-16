@@ -209,6 +209,7 @@ case "$DEPLOY_GTK_VERSION" in
         gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
         gtk3_path="$gtk3_libdir/modules"
         gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
+        gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/printbackends"
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
         gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
         copy_tree "$gtk3_libdir" "$APPDIR/"
