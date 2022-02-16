@@ -213,7 +213,6 @@ case "$DEPLOY_GTK_VERSION" in
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
         gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
         copy_tree "$gtk3_libdir" "$APPDIR/"
-        sed -i "s|$gtk3_libdir/||g" "$APPDIR/$gtk3_immodules_cache_file"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
 export GTK_PATH="\$APPDIR/$gtk3_path"
@@ -229,6 +228,7 @@ EOF
         if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
             echo "WARNING: immodules.cache file is missing"
         fi
+        sed -i "s|$gtk3_libdir/||g" "$APPDIR/$gtk3_immodules_cache_file"
         ;;
     4)
         echo "Installing GTK 4.0 modules"
@@ -255,7 +255,6 @@ gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-
 # Note: gdk_pixbuf_query_loaders variable is not defined on some systems
 gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
 copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
-sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/$gdk_pixbuf_cache_file"
 cat >> "$HOOKFILE" <<EOF
 export GDK_PIXBUF_MODULE_FILE="\$APPDIR/$gdk_pixbuf_cache_file"
 EOF
@@ -268,6 +267,7 @@ fi
 if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
     echo "WARNING: loaders.cache file is missing"
 fi
+sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/$gdk_pixbuf_cache_file"
 
 echo "Copying more libraries"
 gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0")"
