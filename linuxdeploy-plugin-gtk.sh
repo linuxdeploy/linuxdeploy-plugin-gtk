@@ -223,7 +223,7 @@ EOF
         if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
             echo "WARNING: immodules.cache file is missing"
         fi
-        sed -i "s|$gtk3_libdir/||g" "$APPDIR/$gtk3_immodules_cache_file"
+        sed -i "s|$gtk3_libdir/3.0.0/immodules/||g" "$APPDIR/$gtk3_immodules_cache_file"
         ;;
     4)
         echo "Installing GTK 4.0 modules"
