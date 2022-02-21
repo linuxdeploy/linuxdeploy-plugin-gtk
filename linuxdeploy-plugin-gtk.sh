@@ -136,11 +136,6 @@ if ! command -v find &>/dev/null && ! type find &>/dev/null; then
     exit 1
 fi
 
-if ! command -v patchelf &>/dev/null && ! type patchelf &>/dev/null; then
-    echo -e "$0: patchelf not found.\nInstall patchelf then re-run the plugin."
-    exit 1
-fi
-
 if [ -z "$LINUXDEPLOY" ]; then
     echo -e "$0: LINUXDEPLOY environment variable is not set.\nDownload a suitable linuxdeploy AppImage, set the environment variable and re-run the plugin."
     exit 1
@@ -185,16 +180,6 @@ cat > "$HOOKFILE" <<\EOF
 gsettings get org.gnome.desktop.interface gtk-theme 2> /dev/null | grep -qi "dark" && GTK_THEME_VARIANT="dark" || GTK_THEME_VARIANT="light"
 APPIMAGE_GTK_THEME="${APPIMAGE_GTK_THEME:-"Adwaita:$GTK_THEME_VARIANT"}" # Allow user to override theme (discouraged)
 
-# in case we run from an AppImage, we use the $APPDIR environment variable as a template for the temporary directory that should be created
-# this allows users to attribute the tempdir to the running AppImage
-if [ "$APPDIR" != "" ]; then
-    tempdir_template="$APPDIR".ld-p-gtk-tmp-XXXXXX
-else
-    tempdir_template=/tmp/.ld-p-gtk-tmp-XXXXXX
-fi
-
-export CACHEDIR="$(mktemp -d "$tempdir_template")"
-
 export APPDIR="${APPDIR:-"$(dirname "$(realpath "$0")")"}" # Workaround to run extracted AppImage
 export GTK_DATA_PREFIX="$APPDIR"
 export GTK_THEME="$APPIMAGE_GTK_THEME" # Custom themes are broken
@@ -222,15 +207,15 @@ case "$DEPLOY_GTK_VERSION" in
         gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
         gtk3_path="$gtk3_libdir/modules"
         gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
+        gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/printbackends"
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
         gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
         copy_tree "$gtk3_libdir" "$APPDIR/"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
 export GTK_PATH="\$APPDIR/$gtk3_path"
-export GTK_IM_MODULE_DIR="\$APPDIR/$gtk3_immodulesdir"
-export GTK_IM_MODULE_FILE="\$CACHEDIR/immodules.cache"
-sed "s|$gtk3_libdir|\$APPDIR/$gtk3_libdir|g" "\$APPDIR/$gtk3_immodules_cache_file" > "\$GTK_IM_MODULE_FILE"
+export GTK_IM_MODULE_FILE="\$APPDIR/$gtk3_immodules_cache_file"
+
 EOF
         if [ -x "$gtk3_immodules_query" ]; then
             echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
@@ -241,6 +226,7 @@ EOF
         if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
             echo "WARNING: immodules.cache file is missing"
         fi
+        sed -i "s|$gtk3_libdir/3.0.0/immodules/||g" "$APPDIR/$gtk3_immodules_cache_file"
         ;;
     4)
         echo "Installing GTK 4.0 modules"
@@ -268,9 +254,7 @@ gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-
 gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
 copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
-export GDK_PIXBUF_MODULEDIR="\$APPDIR/$gdk_pixbuf_moduledir"
-export GDK_PIXBUF_MODULE_FILE="\$CACHEDIR/loaders.cache"
-sed "s|$gdk_pixbuf_moduledir|\$APPDIR/$gdk_pixbuf_moduledir|g" "\$APPDIR/$gdk_pixbuf_cache_file" > "\$GDK_PIXBUF_MODULE_FILE"
+export GDK_PIXBUF_MODULE_FILE="\$APPDIR/$gdk_pixbuf_cache_file"
 EOF
 if [ -x "$gdk_pixbuf_query" ]; then
     echo "Updating pixbuf cache in $APPDIR/$gdk_pixbuf_cache_file"
@@ -281,6 +265,7 @@ fi
 if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
     echo "WARNING: loaders.cache file is missing"
 fi
+sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/$gdk_pixbuf_cache_file"
 
 echo "Copying more libraries"
 gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0")"
@@ -309,6 +294,8 @@ done
 
 env LINUXDEPLOY_PLUGIN_MODE=1 "$LINUXDEPLOY" --appdir="$APPDIR" "${LIBRARIES[@]}"
 
+# Create symbolic links as a workaround
+# Details: https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/issues/24#issuecomment-1030026529
 echo "Manually setting rpath for GTK modules"
 PATCH_ARRAY=(
     "$gtk3_immodulesdir"
@@ -317,8 +304,7 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        # shellcheck disable=SC2016
-        patchelf --set-rpath '$ORIGIN/../../../..' "$APPDIR/$file"
+        ln $verbose -s "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done
 
