@@ -205,7 +205,7 @@ case "$DEPLOY_GTK_VERSION" in
         echo "Installing GTK 3.0 modules"
         gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
         gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
-        gtk3_path="$gtk3_libdir/modules"
+        #gtk3_path="$gtk3_libdir/modules" export GTK_PATH="\$APPDIR/$gtk3_path"
         gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
         gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/printbackends"
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
@@ -213,7 +213,7 @@ case "$DEPLOY_GTK_VERSION" in
         copy_tree "$gtk3_libdir" "$APPDIR/"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
-export GTK_PATH="\$APPDIR/$gtk3_path"
+export GTK_PATH="\$APPDIR/$gtk3_libdir:/usr/lib64/gtk-3.0:/usr/lib/x86_64-linux-gnu/gtk-3.0"
 export GTK_IM_MODULE_FILE="\$APPDIR/$gtk3_immodules_cache_file"
 
 EOF
