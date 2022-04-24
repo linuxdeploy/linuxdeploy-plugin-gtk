@@ -57,6 +57,7 @@ copy_tree() {
     local dst="${*:$#}"
 
     for elem in "${src[@]}"; do
+        mkdir -p "${dst::-1}$elem"
         cp "$elem" --archive --parents --target-directory="$dst" $verbose
     done
 }
