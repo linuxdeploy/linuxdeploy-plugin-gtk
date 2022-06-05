@@ -309,6 +309,6 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        ln $verbose -s "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
+        ln $verbose -sf "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done
