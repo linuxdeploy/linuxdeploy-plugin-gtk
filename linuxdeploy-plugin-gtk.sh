@@ -194,6 +194,13 @@ cat >> "$HOOKFILE" <<EOF
 export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
+echo "Installing GIRepository Typelibs"
+gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "/usr/lib64/girepository-1.0")"
+copy_tree "$gi_typelibsdir" "$APPDIR/"
+cat >> "$HOOKFILE" <<EOF
+export GI_TYPELIB_PATH="\$APPDIR/$gi_typelibsdir"
+EOF
+
 case "$DEPLOY_GTK_VERSION" in
     2)
         # https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/pull/20#issuecomment-826354261
