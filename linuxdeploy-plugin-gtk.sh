@@ -195,7 +195,7 @@ export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
 echo "Installing GIRepository Typelibs"
-gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "/usr/lib64/girepository-1.0")"
+gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "/usr/lib/x86_64-linux-gnu/girepository-1.0")"
 copy_tree "$gi_typelibsdir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GI_TYPELIB_PATH="\$APPDIR/$gi_typelibsdir"
