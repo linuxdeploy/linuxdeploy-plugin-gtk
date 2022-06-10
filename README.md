@@ -30,22 +30,24 @@ This plugin requires the following dependencies in order to work properly:
 # call through linuxdeploy
 > ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin gtk --output appimage --icon-file mypackage.png --desktop-file mypackage.desktop
 ```
+
+
 ## How it Works
 
 This plugin is written in bash and goes through a series of steps to make sure
 that all the libraries and other files are pulled in for GTK apps to work
 properly once in the AppImage. The steps include:
 
-1.  Detects the GTK version to use
-2.  Installs itself as a hook in $APPDIR/apprun-hooks
-3.  Uses gsettings to set a light or dark adwaita theme
-4.  Installs the GLib schemas and then runs `glib-compile-schemas` on them
-5.  Installs the GIRepository typelibs for gobject-introspection
-6.  Copies the GTK libs and sets GTK path related environmental variables to
-    locations in the APPDIR
-7.  Updates the input method module registration (immodules) cache
-8.  Installs the GDK Pixbuf libraries and cache, and then updates the cache
-    using gdk-pixbuf-query-loaders
-9.  Installs additional libraries including Gdk, GObject, Gio, librsvg, Pango,
-    PangoCairo, and PangoFT2
-10. Manually sets the RPATH for the GTK modules
+1. Detects the GTK version to use
+1. Installs itself as a hook in `$APPDIR/apprun-hooks`
+1. Uses `gsettings` to set a light or dark adwaita theme
+1. Installs the GLib schemas and then runs `glib-compile-schemas` on them
+1. Installs the GIRepository typelibs for gobject-introspection
+1. Copies the GTK libs and sets GTK path related environmental variables to
+1  locations in the APPDIR
+1. Updates the input method module registration (immodules) cache
+1. Installs the GDK Pixbuf libraries and cache, and then updates the cache
+1  using gdk-pixbuf-query-loaders
+1. Installs additional libraries including Gdk, GObject, Gio, librsvg, Pango,
+1  PangoCairo, and PangoFT2
+1. Manually sets the RPATH for the GTK modules
