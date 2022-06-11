@@ -194,6 +194,13 @@ cat >> "$HOOKFILE" <<EOF
 export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
+echo "Installing GIRepository Typelibs"
+gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "/usr/lib/x86_64-linux-gnu/girepository-1.0")"
+copy_tree "$gi_typelibsdir" "$APPDIR/"
+cat >> "$HOOKFILE" <<EOF
+export GI_TYPELIB_PATH="\$APPDIR/$gi_typelibsdir"
+EOF
+
 case "$DEPLOY_GTK_VERSION" in
     2)
         # https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/pull/20#issuecomment-826354261
@@ -201,11 +208,11 @@ case "$DEPLOY_GTK_VERSION" in
         ;;
     3)
         echo "Installing GTK 3.0 modules"
-        gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0")"
-        gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0")/gtk-3.0"
+        gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0" "/usr")"
+        gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0" "/usr/lib/x86_64-linux-gnu")/gtk-3.0"
         gtk3_path="$gtk3_libdir/modules"
-        gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/immodules"
-        gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0")/printbackends"
+        gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/immodules"
+        gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/printbackends"
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
         gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
         copy_tree "$gtk3_libdir" "$APPDIR/"
@@ -244,10 +251,10 @@ EOF
 esac
 
 echo "Installing GDK PixBufs"
-gdk_libdir="$(get_pkgconf_variable "libdir" "gdk-pixbuf-2.0")"
-gdk_pixbuf_binarydir="$(get_pkgconf_variable "gdk_pixbuf_binarydir" "gdk-pixbuf-2.0")"
-gdk_pixbuf_cache_file="$(get_pkgconf_variable "gdk_pixbuf_cache_file" "gdk-pixbuf-2.0")"
-gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-2.0")"
+gdk_libdir="$(get_pkgconf_variable "libdir" "gdk-pixbuf-2.0" "/usr/lib/x86_64-linux-gnu")"
+gdk_pixbuf_binarydir="$(get_pkgconf_variable "gdk_pixbuf_binarydir" "gdk-pixbuf-2.0" "$gdk_libdir""/gdk-pixbuf-2.0/2.10.0")"
+gdk_pixbuf_cache_file="$(get_pkgconf_variable "gdk_pixbuf_cache_file" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir""/loaders.cache")"
+gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir""/loaders")"
 # Note: gdk_pixbuf_query_loaders variable is not defined on some systems
 gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
 copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
@@ -266,12 +273,12 @@ fi
 sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/$gdk_pixbuf_cache_file"
 
 echo "Copying more libraries"
-gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0")"
-gio_libdir="$(get_pkgconf_variable "libdir" "gio-2.0")"
-librsvg_libdir="$(get_pkgconf_variable "libdir" "librsvg-2.0")"
-pango_libdir="$(get_pkgconf_variable "libdir" "pango")"
-pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo")"
-pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2")"
+gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0" "/usr/lib/x86_64-linux-gnu")"
+gio_libdir="$(get_pkgconf_variable "libdir" "gio-2.0" "/usr/lib/x86_64-linux-gnu")"
+librsvg_libdir="$(get_pkgconf_variable "libdir" "librsvg-2.0" "/usr/lib/x86_64-linux-gnu")"
+pango_libdir="$(get_pkgconf_variable "libdir" "pango" "/usr/lib/x86_64-linux-gnu")"
+pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo" "/usr/lib/x86_64-linux-gnu")"
+pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2" "/usr/lib/x86_64-linux-gnu")"
 FIND_ARRAY=(
     "$gdk_libdir"     "libgdk_pixbuf-*.so*"
     "$gobject_libdir" "libgobject-*.so*"
@@ -302,6 +309,6 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        ln $verbose -s "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
+        ln $verbose -sf "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done
