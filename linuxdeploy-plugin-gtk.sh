@@ -210,7 +210,7 @@ case "$DEPLOY_GTK_VERSION" in
         echo "Installing GTK 3.0 modules"
         gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0" "/usr")"
         gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0" "/usr/lib/x86_64-linux-gnu")/gtk-3.0"
-        gtk3_path="$gtk3_libdir/modules"
+        gtk3_path="$gtk3_libdir"
         gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/immodules"
         gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/printbackends"
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
@@ -237,7 +237,7 @@ EOF
         echo "Installing GTK 4.0 modules"
         gtk4_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk4" "/usr")"
         gtk4_libdir="$(get_pkgconf_variable "libdir" "gtk4")/gtk-4.0"
-        gtk4_path="$gtk4_libdir/modules"
+        gtk4_path="$gtk4_libdir"
         copy_tree "$gtk4_libdir" "$APPDIR/"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk4_exec_prefix"
