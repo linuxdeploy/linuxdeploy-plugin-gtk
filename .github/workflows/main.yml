@@ -18,7 +18,7 @@ jobs:
     - name: Setup dependencies
       run: |
         sudo apt-get update -y -qq
-        sudo apt-get install -y -qq libgtk-3-0 libgtk-3-dev gir1.2-gtk-3.0 wget tree libgirepository1.0-dev
+        sudo apt-get install -y -qq libgtk-3-0 libgtk-3-dev gir1.2-gtk-3.0 wget tree libgirepository1.0-dev libfuse2
 
     - name: Download external binairies
       run: |
