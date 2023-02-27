@@ -40,11 +40,15 @@ get_pkgconf_variable() {
     local library="$2"
     local default_path="$3"
 
-    path="$("$PKG_CONFIG" --variable="$variable" "$library")"
+    path="$("$PKG_CONFIG" --variable="$variable" "$library" || echo "$default_path")"
     if [ -n "$path" ]; then
-        echo "$path"
-    elif [ -n "$default_path" ]; then
-        echo "$default_path"
+        if [ -d "$path" ]; then
+            echo "$path"
+        else
+            echo "$0: '$path' is not a valid path to an existing directory on the current system." > /dev/stderr
+            echo "Please check the '$library.pc' file is present in \$PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package)." > /dev/stderr
+            exit 1
+        fi
     else
         echo "$0: there is no '$variable' variable for '$library' library." > /dev/stderr
         echo "Please check the '$library.pc' file is present in \$PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package)." > /dev/stderr
