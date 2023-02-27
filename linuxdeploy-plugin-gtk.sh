@@ -40,9 +40,11 @@ get_pkgconf_variable() {
     local library="$2"
     local default_value="$3"
 
-    pkgconfig_ret="$("$PKG_CONFIG" --variable="$variable" "$library" || echo "$default_value")"
+    pkgconfig_ret="$("$PKG_CONFIG" --variable="$variable" "$library")"
     if [ -n "$pkgconfig_ret" ]; then
         echo "$pkgconfig_ret"
+    elif [ -n "$default_value" ]; then
+        echo "$default_value"
     else
         echo "$0: there is no '$variable' variable for '$library' library." > /dev/stderr
         echo "Please check the '$library.pc' file is present in \$PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package)." > /dev/stderr
