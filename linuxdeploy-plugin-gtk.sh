@@ -11,10 +11,10 @@ if [ "$DEBUG" != "" ]; then
     verbose="--verbose"
 fi
 
-script=$(readlink -f "$0")
+SCRIPT="$(basename "$(readlink -f "$0")")"
 
 show_usage() {
-    echo "Usage: $script --appdir <path to AppDir>"
+    echo "Usage: $SCRIPT --appdir <path to AppDir>"
     echo
     echo "Bundles resources for applications that use GTK into an AppDir"
     echo
