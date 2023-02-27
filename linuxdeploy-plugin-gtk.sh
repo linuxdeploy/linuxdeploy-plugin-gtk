@@ -38,7 +38,7 @@ variable_is_true() {
 get_pkgconf_variable() {
     local variable="$1"
     local library="$2"
-    local default_value="${3:-$LIBRARY_PATH}"
+    local default_value="${3:-$LD_GTK_LIBRARY_PATH}"
 
     pkgconfig_ret="$("$PKG_CONFIG" --variable="$variable" "$library" || echo "$default_value")"
     if [ -n "$pkgconfig_ret" ]; then
@@ -150,7 +150,7 @@ else
     echo "$0: pkg-config/pkgconf not found in PATH, aborting"
     exit 1
 fi
-LIBRARY_PATH="$(search_library_path)"
+LD_GTK_LIBRARY_PATH="${LD_GTK_LIBRARY_PATH:-$(search_library_path)}"
 
 if ! command -v find &>/dev/null && ! type find &>/dev/null; then
     echo -e "$0: find not found.\nInstall findutils then re-run the plugin."
@@ -218,7 +218,7 @@ export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
 echo "Installing GIRepository Typelibs"
-gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "$LIBRARY_PATH/girepository-1.0")"
+gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "$LD_GTK_LIBRARY_PATH/girepository-1.0")"
 copy_tree "$gi_typelibsdir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GI_TYPELIB_PATH="\$APPDIR/$gi_typelibsdir"
