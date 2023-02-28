@@ -11,6 +11,7 @@ This plugin requires the following dependencies in order to work properly:
 - `pkg-config` or `pkgconf` command
 - librsvg2 development files
 - GTK development files
+- GObject Introspection development files
 
 ## Usage
 

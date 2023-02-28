@@ -11,10 +11,10 @@ if [ "$DEBUG" != "" ]; then
     verbose="--verbose"
 fi
 
-script=$(readlink -f "$0")
+SCRIPT="$(basename "$(readlink -f "$0")")"
 
 show_usage() {
-    echo "Usage: $script --appdir <path to AppDir>"
+    echo "Usage: $SCRIPT --appdir <path to AppDir>"
     echo
     echo "Bundles resources for applications that use GTK into an AppDir"
     echo
@@ -38,13 +38,13 @@ variable_is_true() {
 get_pkgconf_variable() {
     local variable="$1"
     local library="$2"
-    local default_path="$3"
+    local default_value="$3"
 
-    path="$("$PKG_CONFIG" --variable="$variable" "$library")"
-    if [ -n "$path" ]; then
-        echo "$path"
-    elif [ -n "$default_path" ]; then
-        echo "$default_path"
+    pkgconfig_ret="$("$PKG_CONFIG" --variable="$variable" "$library")"
+    if [ -n "$pkgconfig_ret" ]; then
+        echo "$pkgconfig_ret"
+    elif [ -n "$default_value" ]; then
+        echo "$default_value"
     else
         echo "$0: there is no '$variable' variable for '$library' library." > /dev/stderr
         echo "Please check the '$library.pc' file is present in \$PKG_CONFIG_PATH (you may need to install the appropriate -dev/-devel package)." > /dev/stderr
@@ -59,6 +59,20 @@ copy_tree() {
     for elem in "${src[@]}"; do
         mkdir -p "${dst::-1}$elem"
         cp "$elem" --archive --parents --target-directory="$dst" $verbose
+    done
+}
+
+search_library_path() {
+    PATH_ARRAY=(
+        "/usr/lib/$(uname -m)-linux-gnu"
+        "/usr/lib"
+    )
+
+    for path in "${PATH_ARRAY[@]}"; do
+        if [ -d "$path" ]; then
+            echo "$path"
+            return 0
+        fi
     done
 }
 
@@ -128,6 +142,7 @@ else
     echo "$0: pkg-config/pkgconf not found in PATH, aborting"
     exit 1
 fi
+LD_GTK_LIBRARY_PATH="${LD_GTK_LIBRARY_PATH:-$(search_library_path)}"
 
 if ! command -v find &>/dev/null && ! type find &>/dev/null; then
     echo -e "$0: find not found.\nInstall findutils then re-run the plugin."
@@ -195,7 +210,7 @@ export GSETTINGS_SCHEMA_DIR="\$APPDIR/$glib_schemasdir"
 EOF
 
 echo "Installing GIRepository Typelibs"
-gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "/usr/lib/x86_64-linux-gnu/girepository-1.0")"
+gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "$LD_GTK_LIBRARY_PATH/girepository-1.0")"
 copy_tree "$gi_typelibsdir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
 export GI_TYPELIB_PATH="\$APPDIR/$gi_typelibsdir"
@@ -209,7 +224,7 @@ case "$DEPLOY_GTK_VERSION" in
     3)
         echo "Installing GTK 3.0 modules"
         gtk3_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk+-3.0" "/usr")"
-        gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0" "/usr/lib/x86_64-linux-gnu")/gtk-3.0"
+        gtk3_libdir="$(get_pkgconf_variable "libdir" "gtk+-3.0" "$LD_GTK_LIBRARY_PATH")/gtk-3.0"
         gtk3_path="$gtk3_libdir"
         gtk3_immodulesdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/immodules"
         gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/printbackends"
@@ -251,10 +266,10 @@ EOF
 esac
 
 echo "Installing GDK PixBufs"
-gdk_libdir="$(get_pkgconf_variable "libdir" "gdk-pixbuf-2.0" "/usr/lib/x86_64-linux-gnu")"
-gdk_pixbuf_binarydir="$(get_pkgconf_variable "gdk_pixbuf_binarydir" "gdk-pixbuf-2.0" "$gdk_libdir""/gdk-pixbuf-2.0/2.10.0")"
-gdk_pixbuf_cache_file="$(get_pkgconf_variable "gdk_pixbuf_cache_file" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir""/loaders.cache")"
-gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir""/loaders")"
+gdk_libdir="$(get_pkgconf_variable "libdir" "gdk-pixbuf-2.0" "$LD_GTK_LIBRARY_PATH")"
+gdk_pixbuf_binarydir="$(get_pkgconf_variable "gdk_pixbuf_binarydir" "gdk-pixbuf-2.0" "$gdk_libdir/gdk-pixbuf-2.0/2.10.0")"
+gdk_pixbuf_cache_file="$(get_pkgconf_variable "gdk_pixbuf_cache_file" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir/loaders.cache")"
+gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir/loaders")"
 # Note: gdk_pixbuf_query_loaders variable is not defined on some systems
 gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
 copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
@@ -273,12 +288,12 @@ fi
 sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/$gdk_pixbuf_cache_file"
 
 echo "Copying more libraries"
-gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0" "/usr/lib/x86_64-linux-gnu")"
-gio_libdir="$(get_pkgconf_variable "libdir" "gio-2.0" "/usr/lib/x86_64-linux-gnu")"
-librsvg_libdir="$(get_pkgconf_variable "libdir" "librsvg-2.0" "/usr/lib/x86_64-linux-gnu")"
-pango_libdir="$(get_pkgconf_variable "libdir" "pango" "/usr/lib/x86_64-linux-gnu")"
-pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo" "/usr/lib/x86_64-linux-gnu")"
-pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2" "/usr/lib/x86_64-linux-gnu")"
+gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0" "$LD_GTK_LIBRARY_PATH")"
+gio_libdir="$(get_pkgconf_variable "libdir" "gio-2.0" "$LD_GTK_LIBRARY_PATH")"
+librsvg_libdir="$(get_pkgconf_variable "libdir" "librsvg-2.0" "$LD_GTK_LIBRARY_PATH")"
+pango_libdir="$(get_pkgconf_variable "libdir" "pango" "$LD_GTK_LIBRARY_PATH")"
+pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo" "$LD_GTK_LIBRARY_PATH")"
+pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2" "$LD_GTK_LIBRARY_PATH")"
 FIND_ARRAY=(
     "$gdk_libdir"     "libgdk_pixbuf-*.so*"
     "$gobject_libdir" "libgobject-*.so*"
