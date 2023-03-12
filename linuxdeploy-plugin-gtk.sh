@@ -65,6 +65,7 @@ copy_tree() {
 search_library_path() {
     PATH_ARRAY=(
         "/usr/lib/$(uname -m)-linux-gnu"
+        "/usr/lib64"
         "/usr/lib"
     )
 
@@ -86,6 +87,7 @@ search_tool() {
 
     PATH_ARRAY=(
         "/usr/lib/$(uname -m)-linux-gnu/$directory/$tool"
+        "/usr/lib64/$directory/$tool"
         "/usr/lib/$directory/$tool"
         "/usr/bin/$tool"
         "/usr/bin/$tool-64"
@@ -235,8 +237,8 @@ case "$DEPLOY_GTK_VERSION" in
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
 export GTK_PATH="\$APPDIR/$gtk3_path"
 export GTK_IM_MODULE_FILE="\$APPDIR/$gtk3_immodules_cache_file"
-
 EOF
+
         if [ -x "$gtk3_immodules_query" ]; then
             echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
             "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
@@ -296,6 +298,7 @@ pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo" "$LD_GTK_LIBRARY
 pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2" "$LD_GTK_LIBRARY_PATH")"
 FIND_ARRAY=(
     "$gdk_libdir"     "libgdk_pixbuf-*.so*"
+    "$gdk_libdir"     "libgdk-*.so*"
     "$gobject_libdir" "libgobject-*.so*"
     "$gio_libdir"     "libgio-*.so*"
     "$librsvg_libdir" "librsvg-*.so*"
