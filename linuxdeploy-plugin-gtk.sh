@@ -71,7 +71,7 @@ copy_lib_tree() {
 
     for elem in "${src[@]}"; do
         mkdir -p "${dst::-1}${elem/$LD_GTK_LIBRARY_PATH//usr/lib}"
-        pushd $LD_GTK_LIBRARY_PATH
+        pushd "$LD_GTK_LIBRARY_PATH"
         cp "$(realpath --relative-to="$LD_GTK_LIBRARY_PATH" "$elem")" --archive --parents --target-directory="$dst/usr/lib" $verbose
         popd
     done
