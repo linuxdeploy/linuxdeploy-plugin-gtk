@@ -312,10 +312,10 @@ pango_libdir="$(get_pkgconf_variable "libdir" "pango" "$LD_GTK_LIBRARY_PATH")"
 pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo" "$LD_GTK_LIBRARY_PATH")"
 pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2" "$LD_GTK_LIBRARY_PATH")"
 FIND_ARRAY=(
-    "$gdk_libdir"     "libgdk_pixbuf-*.so*"
-    "$gobject_libdir" "libgobject-*.so*"
-    "$gio_libdir"     "libgio-*.so*"
-    "$librsvg_libdir" "librsvg-*.so*"
+    "$gdk_libdir"        "libgdk_pixbuf-*.so*"
+    "$gobject_libdir"    "libgobject-*.so*"
+    "$gio_libdir"        "libgio-*.so*"
+    "$librsvg_libdir"    "librsvg-*.so*"
     "$pango_libdir"      "libpango-*.so*"
     "$pangocairo_libdir" "libpangocairo-*.so*"
     "$pangoft2_libdir"   "libpangoft2-*.so*"
@@ -341,6 +341,6 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        ln $verbose -sf "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
+        ln $verbose -sf "${file/$LD_GTK_LIBRARY_PATH/}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done
