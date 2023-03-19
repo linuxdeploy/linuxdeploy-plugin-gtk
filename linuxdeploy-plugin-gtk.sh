@@ -70,7 +70,7 @@ copy_lib_tree() {
     local dst="${*:$#}"
 
     for elem in "${src[@]}"; do
-        mkdir -p "${dst::-1}${elem///usr/lib}"
+        mkdir -p "${dst::-1}${elem/$LD_GTK_LIBRARY_PATH//usr/lib}"
         pushd $LD_GTK_LIBRARY_PATH
         cp "$(realpath --relative-to="$LD_GTK_LIBRARY_PATH" "$elem")" --archive --parents --target-directory="$dst/usr/lib" $verbose
         popd
@@ -273,7 +273,7 @@ EOF
         copy_lib_tree "$gtk4_libdir" "$APPDIR/"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk4_exec_prefix"
-export GTK_PATH="\$APPDIR/$gtk4_path"
+export GTK_PATH="\$APPDIR/${gtk4_path/$LD_GTK_LIBRARY_PATH//usr/lib}"
 EOF
         ;;
     *)
