@@ -341,6 +341,6 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        ln $verbose -sf "${file/$LD_GTK_LIBRARY_PATH/}" "$APPDIR/usr/lib"
+        ln $verbose -sf "${file/$LD_GTK_LIBRARY_PATH\//}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done
