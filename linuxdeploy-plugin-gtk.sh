@@ -62,6 +62,21 @@ copy_tree() {
     done
 }
 
+copy_lib_tree() {
+    # The source lib directory could be /usr/lib, /usr/lib64, or /usr/lib/x86_64-linux-gnu
+    # Therefore, when copying lib directories, we need to transform that target path
+    # to a consistent /usr/lib
+    local src=("${@:1:$#-1}")
+    local dst="${*:$#}"
+
+    for elem in "${src[@]}"; do
+        mkdir -p "${dst::-1}${elem/$LD_GTK_LIBRARY_PATH//usr/lib}"
+        pushd "$LD_GTK_LIBRARY_PATH"
+        cp "$(realpath --relative-to="$LD_GTK_LIBRARY_PATH" "$elem")" --archive --parents --target-directory="$dst/usr/lib" $verbose
+        popd
+    done
+}
+
 search_library_path() {
     PATH_ARRAY=(
         "/usr/lib/$(uname -m)-linux-gnu"
@@ -213,9 +228,9 @@ EOF
 
 echo "Installing GIRepository Typelibs"
 gi_typelibsdir="$(get_pkgconf_variable "typelibdir" "gobject-introspection-1.0" "$LD_GTK_LIBRARY_PATH/girepository-1.0")"
-copy_tree "$gi_typelibsdir" "$APPDIR/"
+copy_lib_tree "$gi_typelibsdir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
-export GI_TYPELIB_PATH="\$APPDIR/$gi_typelibsdir"
+export GI_TYPELIB_PATH="\$APPDIR/${gi_typelibsdir/$LD_GTK_LIBRARY_PATH//usr/lib}"
 EOF
 
 case "$DEPLOY_GTK_VERSION" in
@@ -232,33 +247,33 @@ case "$DEPLOY_GTK_VERSION" in
         gtk3_printbackendsdir="$gtk3_libdir/$(get_pkgconf_variable "gtk_binary_version" "gtk+-3.0" "3.0.0")/printbackends"
         gtk3_immodules_cache_file="$(dirname "$gtk3_immodulesdir")/immodules.cache"
         gtk3_immodules_query="$(search_tool "gtk-query-immodules-3.0" "libgtk-3-0")"
-        copy_tree "$gtk3_libdir" "$APPDIR/"
+        copy_lib_tree "$gtk3_libdir" "$APPDIR/"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk3_exec_prefix"
-export GTK_PATH="\$APPDIR/$gtk3_path"
-export GTK_IM_MODULE_FILE="\$APPDIR/$gtk3_immodules_cache_file"
+export GTK_PATH="\$APPDIR/${gtk3_path/$LD_GTK_LIBRARY_PATH//usr/lib}"
+export GTK_IM_MODULE_FILE="\$APPDIR/${gtk3_immodules_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
 EOF
 
         if [ -x "$gtk3_immodules_query" ]; then
-            echo "Updating immodules cache in $APPDIR/$gtk3_immodules_cache_file"
-            "$gtk3_immodules_query" > "$APPDIR/$gtk3_immodules_cache_file"
+            echo "Updating immodules cache in $APPDIR/${gtk3_immodules_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
+            "$gtk3_immodules_query" > "$APPDIR/${gtk3_immodules_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
         else
             echo "WARNING: gtk-query-immodules-3.0 not found"
         fi
-        if [ ! -f "$APPDIR/$gtk3_immodules_cache_file" ]; then
+        if [ ! -f "$APPDIR/${gtk3_immodules_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}" ]; then
             echo "WARNING: immodules.cache file is missing"
         fi
-        sed -i "s|$gtk3_libdir/3.0.0/immodules/||g" "$APPDIR/$gtk3_immodules_cache_file"
+        sed -i "s|$gtk3_libdir/3.0.0/immodules/||g" "$APPDIR/${gtk3_immodules_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
         ;;
     4)
         echo "Installing GTK 4.0 modules"
         gtk4_exec_prefix="$(get_pkgconf_variable "exec_prefix" "gtk4" "/usr")"
         gtk4_libdir="$(get_pkgconf_variable "libdir" "gtk4")/gtk-4.0"
         gtk4_path="$gtk4_libdir"
-        copy_tree "$gtk4_libdir" "$APPDIR/"
+        copy_lib_tree "$gtk4_libdir" "$APPDIR/"
         cat >> "$HOOKFILE" <<EOF
 export GTK_EXE_PREFIX="\$APPDIR/$gtk4_exec_prefix"
-export GTK_PATH="\$APPDIR/$gtk4_path"
+export GTK_PATH="\$APPDIR/${gtk4_path/$LD_GTK_LIBRARY_PATH//usr/lib}"
 EOF
         ;;
     *)
@@ -274,20 +289,20 @@ gdk_pixbuf_cache_file="$(get_pkgconf_variable "gdk_pixbuf_cache_file" "gdk-pixbu
 gdk_pixbuf_moduledir="$(get_pkgconf_variable "gdk_pixbuf_moduledir" "gdk-pixbuf-2.0" "$gdk_pixbuf_binarydir/loaders")"
 # Note: gdk_pixbuf_query_loaders variable is not defined on some systems
 gdk_pixbuf_query="$(search_tool "gdk-pixbuf-query-loaders" "gdk-pixbuf-2.0")"
-copy_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
+copy_lib_tree "$gdk_pixbuf_binarydir" "$APPDIR/"
 cat >> "$HOOKFILE" <<EOF
-export GDK_PIXBUF_MODULE_FILE="\$APPDIR/$gdk_pixbuf_cache_file"
+export GDK_PIXBUF_MODULE_FILE="\$APPDIR/${gdk_pixbuf_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
 EOF
 if [ -x "$gdk_pixbuf_query" ]; then
-    echo "Updating pixbuf cache in $APPDIR/$gdk_pixbuf_cache_file"
-    "$gdk_pixbuf_query" > "$APPDIR/$gdk_pixbuf_cache_file"
+    echo "Updating pixbuf cache in $APPDIR/${gdk_pixbuf_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
+    "$gdk_pixbuf_query" > "$APPDIR/${gdk_pixbuf_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
 else
     echo "WARNING: gdk-pixbuf-query-loaders not found"
 fi
-if [ ! -f "$APPDIR/$gdk_pixbuf_cache_file" ]; then
+if [ ! -f "$APPDIR/${gdk_pixbuf_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}" ]; then
     echo "WARNING: loaders.cache file is missing"
 fi
-sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/$gdk_pixbuf_cache_file"
+sed -i "s|$gdk_pixbuf_moduledir/||g" "$APPDIR/${gdk_pixbuf_cache_file/$LD_GTK_LIBRARY_PATH//usr/lib}"
 
 echo "Copying more libraries"
 gobject_libdir="$(get_pkgconf_variable "libdir" "gobject-2.0" "$LD_GTK_LIBRARY_PATH")"
@@ -297,11 +312,10 @@ pango_libdir="$(get_pkgconf_variable "libdir" "pango" "$LD_GTK_LIBRARY_PATH")"
 pangocairo_libdir="$(get_pkgconf_variable "libdir" "pangocairo" "$LD_GTK_LIBRARY_PATH")"
 pangoft2_libdir="$(get_pkgconf_variable "libdir" "pangoft2" "$LD_GTK_LIBRARY_PATH")"
 FIND_ARRAY=(
-    "$gdk_libdir"     "libgdk_pixbuf-*.so*"
-    "$gdk_libdir"     "libgdk-*.so*"
-    "$gobject_libdir" "libgobject-*.so*"
-    "$gio_libdir"     "libgio-*.so*"
-    "$librsvg_libdir" "librsvg-*.so*"
+    "$gdk_libdir"        "libgdk_pixbuf-*.so*"
+    "$gobject_libdir"    "libgobject-*.so*"
+    "$gio_libdir"        "libgio-*.so*"
+    "$librsvg_libdir"    "librsvg-*.so*"
     "$pango_libdir"      "libpango-*.so*"
     "$pangocairo_libdir" "libpangocairo-*.so*"
     "$pangoft2_libdir"   "libpangoft2-*.so*"
@@ -327,6 +341,6 @@ PATCH_ARRAY=(
 )
 for directory in "${PATCH_ARRAY[@]}"; do
     while IFS= read -r -d '' file; do
-        ln $verbose -sf "${file/\/usr\/lib\//}" "$APPDIR/usr/lib"
+        ln $verbose -sf "${file/$LD_GTK_LIBRARY_PATH\//}" "$APPDIR/usr/lib"
     done < <(find "$directory" -name '*.so' -print0)
 done
