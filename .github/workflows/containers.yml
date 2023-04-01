@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build container
         run: |
@@ -31,7 +31,7 @@ jobs:
             -f "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" \
             .
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.linux-distro }} with ${{ matrix.gtk-version }}
           path: ${{ env.ARTIFACT_DIR }}/
