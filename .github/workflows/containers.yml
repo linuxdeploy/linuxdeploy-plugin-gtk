@@ -15,7 +15,9 @@ jobs:
     env:
       GTK_VERSION: ${{ matrix.gtk-version }}
       LINUX_DISTRO: ${{ matrix.linux-distro }}
-      ARTIFACT_DIR: "${{ github.workspace }}/AppImages"
+      IMAGE_NAME: "linuxdeploy-plugin-${{ matrix.gtk-version }}:${{ matrix.linux-distro }}"
+      CONTAINER_NAME: "${{ matrix.linux-distro }}-${{ matrix.gtk-version }}"
+      ARTIFACT_DIR: "${{ github.workspace }}/AppImage"
 
     steps:
       - name: Checkout
@@ -23,13 +25,14 @@ jobs:
 
       - name: Build container
         run: |
-          mkdir -pv "${ARTIFACT_DIR}"
-          buildah bud \
-            --squash \
-            -v "${ARTIFACT_DIR}:/AppImage:rw,z,shared" \
-            -t "linuxdeploy-plugin-${GTK_VERSION}:${LINUX_DISTRO}" \
-            -f "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" \
-            .
+          buildah bud --tag "${IMAGE_NAME}" --file "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" .
+
+      - name: Extract AppImage from container
+        run: |
+          mkdir --verbose --parents "${ARTIFACT_DIR}"
+          podman run --name "${CONTAINER_NAME}" --interactive --detach --rm --entrypoint /bin/bash "${IMAGE_NAME}"
+          podman cp "${CONTAINER_NAME}:/AppImage/Widget_Factory-x86_64.AppImage" "${ARTIFACT_DIR}"
+          podman stop "${CONTAINER_NAME}" --time 0
 
       - uses: actions/upload-artifact@v3
         with:
