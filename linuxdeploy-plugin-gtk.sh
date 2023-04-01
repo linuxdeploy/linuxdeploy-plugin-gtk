@@ -149,6 +149,7 @@ if [ "$APPDIR" == "" ]; then
     exit 1
 fi
 
+APPDIR="$(realpath "$APPDIR")"
 mkdir -p "$APPDIR"
 
 if command -v pkgconf > /dev/null; then
