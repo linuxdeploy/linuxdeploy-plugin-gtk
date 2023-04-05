@@ -208,7 +208,11 @@ mkdir -p "$HOOKSDIR"
 cat > "$HOOKFILE" <<\EOF
 #! /usr/bin/env bash
 
-gsettings get org.gnome.desktop.interface gtk-theme 2> /dev/null | grep -qi "dark" && GTK_THEME_VARIANT="dark" || GTK_THEME_VARIANT="light"
+case "$(gsettings get org.gnome.desktop.interface color-scheme 2> /dev/null)" in
+    "'prefer-dark'")  GTK_THEME_VARIANT="dark";;
+    "'prefer-light'") GTK_THEME_VARIANT="light";;
+    *)                GTK_THEME_VARIANT="light";;
+esac
 APPIMAGE_GTK_THEME="${APPIMAGE_GTK_THEME:-"Adwaita:$GTK_THEME_VARIANT"}" # Allow user to override theme (discouraged)
 
 export APPDIR="${APPDIR:-"$(dirname "$(realpath "$0")")"}" # Workaround to run extracted AppImage
