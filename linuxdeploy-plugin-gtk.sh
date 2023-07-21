@@ -77,9 +77,15 @@ copy_lib_tree() {
     done
 }
 
+get_triplet() {
+    if command -v dpkg-architecture > /dev/null; then
+        dpkg-architecture -qDEB_HOST_MULTIARCH
+    fi
+}
+
 search_library_path() {
     PATH_ARRAY=(
-        "/usr/lib/$(uname -m)-linux-gnu"
+        "/usr/lib/$(get_triplet)"
         "/usr/lib64"
         "/usr/lib"
     )
@@ -101,7 +107,7 @@ search_tool() {
     fi
 
     PATH_ARRAY=(
-        "/usr/lib/$(uname -m)-linux-gnu/$directory/$tool"
+        "/usr/lib/$(get_triplet)/$directory/$tool"
         "/usr/lib64/$directory/$tool"
         "/usr/lib/$directory/$tool"
         "/usr/bin/$tool"
@@ -151,6 +157,14 @@ fi
 
 APPDIR="$(realpath "$APPDIR")"
 mkdir -p "$APPDIR"
+
+. /etc/os-release
+if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
+    if ! command -v dpkg-architecture  &>/dev/null; then
+        echo -e "$0: dpkg-architecture not found.\nInstall dpkg-dev then re-run the plugin."
+        exit 1
+    fi
+fi
 
 if command -v pkgconf > /dev/null; then
     PKG_CONFIG="pkgconf"
