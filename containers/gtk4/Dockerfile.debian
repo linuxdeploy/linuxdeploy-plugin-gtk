@@ -1,5 +1,4 @@
-# GTK4 is not yet supported on Debian Stable
-FROM docker.io/debian:experimental AS build-stage
+FROM docker.io/debian:bookworm AS build-stage
 WORKDIR /linuxdeploy
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ENV DEBIAN_FRONTEND=noninteractive
@@ -8,7 +7,7 @@ ARG TZ=UTC
 RUN ln -snf "/usr/share/zoneinfo/$TZ" "/etc/localtime" && echo "$TZ" > /etc/timezone
 RUN apt-get update && \
     apt-get install -y wget librsvg2-dev file findutils pkg-config && \
-    apt-get install -y -t experimental libgtk-4-1 libgtk-4-dev gtk-4-examples gir1.2-gtk-4.0
+    apt-get install -y libgtk-4-1 libgtk-4-dev gtk-4-examples gir1.2-gtk-4.0
 COPY . .
 ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
 RUN chmod +x *.sh *.AppImage
@@ -20,7 +19,7 @@ RUN ./linuxdeploy-x86_64.AppImage \
     --desktop-file /usr/share/applications/org.gtk.WidgetFactory4.desktop \
     --icon-file /usr/share/icons/hicolor/scalable/apps/org.gtk.WidgetFactory4.svg
 
-FROM docker.io/debian:experimental
+FROM docker.io/debian:bookworm
 VOLUME ["/AppImage"]
 WORKDIR /AppImage
 ENV APPIMAGE_EXTRACT_AND_RUN=1
