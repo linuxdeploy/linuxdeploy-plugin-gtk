@@ -77,15 +77,17 @@ copy_lib_tree() {
     done
 }
 
-get_triplet() {
+get_triplet_path() {
     if command -v dpkg-architecture > /dev/null; then
-        dpkg-architecture -qDEB_HOST_MULTIARCH
+        echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
     fi
 }
 
+
+
 search_library_path() {
     PATH_ARRAY=(
-        "/usr/lib/$(get_triplet)"
+        "$(get_triplet_path)"
         "/usr/lib64"
         "/usr/lib"
     )
@@ -174,7 +176,9 @@ else
     echo "$0: pkg-config/pkgconf not found in PATH, aborting"
     exit 1
 fi
-LD_GTK_LIBRARY_PATH="${LD_GTK_LIBRARY_PATH:-$(search_library_path)}"
+
+# GTK's library path *must not* have a trailing slash for later parameter substitution to work properly
+LD_GTK_LIBRARY_PATH="$(realpath "${LD_GTK_LIBRARY_PATH:-$(search_library_path)}")"
 
 if ! command -v find &>/dev/null && ! type find &>/dev/null; then
     echo -e "$0: find not found.\nInstall findutils then re-run the plugin."
