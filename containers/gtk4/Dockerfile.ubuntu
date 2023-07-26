@@ -6,8 +6,8 @@ ARG APPDIR=/AppDir
 ARG TZ=UTC
 RUN ln -snf "/usr/share/zoneinfo/$TZ" "/etc/localtime" && echo "$TZ" > /etc/timezone
 RUN apt-get update && \
-    apt-get install -y wget librsvg2-dev file findutils pkg-config libgtk-4-1 \
-    libgtk-4-dev gtk-4-examples gir1.2-gtk-4.0 libfuse2
+    apt-get install -y dpkg-dev wget librsvg2-dev file findutils pkg-config libgtk-4-1 \
+    libgtk-4-dev gtk-4-examples gir1.2-gtk-4.0 libgirepository1.0-dev libfuse2
 COPY . .
 ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
 RUN chmod +x *.sh *.AppImage
