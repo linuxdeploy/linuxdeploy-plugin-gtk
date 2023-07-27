@@ -1,4 +1,4 @@
-name: Containers
+name: GTK Widget Factory from containers
 
 on: [push, pull_request]
 
