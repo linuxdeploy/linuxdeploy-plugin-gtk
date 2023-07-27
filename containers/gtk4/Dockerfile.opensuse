@@ -2,13 +2,14 @@
 FROM docker.io/opensuse/tumbleweed:latest AS build-stage
 WORKDIR /linuxdeploy
 ENV APPIMAGE_EXTRACT_AND_RUN=1
+ARG MACHINE=x86_64
 ARG APPDIR=/AppDir
 RUN zypper install -y wget librsvg2-devel file findutils pkg-config gtk4 gtk4-devel \
     typelib-1_0-Gtk-4_0 gobject-introspection-devel
 COPY . .
-ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" .
-RUN chmod +x *.sh *.AppImage
-RUN ./linuxdeploy-x86_64.AppImage \
+ADD "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${MACHINE}.AppImage" .
+RUN chmod --verbose +x *.sh *.AppImage
+RUN ./linuxdeploy-${MACHINE}.AppImage \
     --appdir ${APPDIR} \
     --plugin gtk \
     --output appimage \
@@ -20,5 +21,6 @@ FROM docker.io/opensuse/tumbleweed:latest
 VOLUME ["/AppImage"]
 WORKDIR /AppImage
 ENV APPIMAGE_EXTRACT_AND_RUN=1
-COPY --from=build-stage "/linuxdeploy/Widget_Factory-x86_64.AppImage" .
-ENTRYPOINT ["./Widget_Factory-x86_64.AppImage"]
+ARG MACHINE=x86_64
+COPY --from=build-stage "/linuxdeploy/Widget_Factory-${MACHINE}.AppImage" "./Widget_Factory.AppImage"
+ENTRYPOINT ["./Widget_Factory.AppImage"]

@@ -8,13 +8,22 @@ jobs:
       matrix:
         gtk-version: [gtk3, gtk4]
         linux-distro: [debian, fedora, opensuse, ubuntu]
+        arch: [amd64]
+        include:
+          - gtk-version: gtk3
+            linux-distro: debian
+            arch: 386
+          - gtk-version: gtk4
+            linux-distro: debian
+            arch: 386
 
-    name: ${{ matrix.linux-distro }} ${{ matrix.gtk-version }}
+    name: ${{ matrix.linux-distro }} ${{ matrix.arch }} ${{ matrix.gtk-version }}
     runs-on: ubuntu-latest
 
     env:
       GTK_VERSION: ${{ matrix.gtk-version }}
       LINUX_DISTRO: ${{ matrix.linux-distro }}
+      ARCHITECTURE: ${{ matrix.arch }}
       IMAGE_NAME: "linuxdeploy-plugin-${{ matrix.gtk-version }}:${{ matrix.linux-distro }}"
       CONTAINER_NAME: "${{ matrix.linux-distro }}-${{ matrix.gtk-version }}"
       ARTIFACT_DIR: "${{ github.workspace }}/AppImage"
@@ -23,19 +32,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Set extra environment variables
+        run: |
+          case "${ARCHITECTURE}" in
+            386)   echo MACHINE="i386" >> "$GITHUB_ENV";;
+            amd64) echo MACHINE="x86_64" >> "$GITHUB_ENV";;
+          esac
+
       - name: Build container
         run: |
-          buildah bud --tag "${IMAGE_NAME}" --file "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" .
+          buildah bud --arch="${ARCHITECTURE}" --build-arg MACHINE="${MACHINE}" --tag "${IMAGE_NAME}" --file "containers/${GTK_VERSION}/Dockerfile.${LINUX_DISTRO}" .
 
       - name: Extract AppImage from container
         run: |
           mkdir --verbose --parents "${ARTIFACT_DIR}"
-          podman run --name "${CONTAINER_NAME}" --interactive --detach --rm --entrypoint /bin/bash "${IMAGE_NAME}"
-          podman cp "${CONTAINER_NAME}:/AppImage/Widget_Factory-x86_64.AppImage" "${ARTIFACT_DIR}"
+          podman run --arch="${ARCHITECTURE}" --name "${CONTAINER_NAME}" --interactive --detach --rm --entrypoint /bin/bash "${IMAGE_NAME}"
+          podman cp "${CONTAINER_NAME}:/AppImage/Widget_Factory.AppImage" "${ARTIFACT_DIR}"
           podman stop "${CONTAINER_NAME}" --time 0
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.linux-distro }} with ${{ matrix.gtk-version }}
+          name: ${{ matrix.gtk-version }}_${{ matrix.linux-distro }}_${{ env.MACHINE }}
           path: ${{ env.ARTIFACT_DIR }}/
           retention-days: 30
