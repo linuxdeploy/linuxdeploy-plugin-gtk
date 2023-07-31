@@ -109,7 +109,7 @@ search_tool() {
     fi
 
     PATH_ARRAY=(
-        "/usr/lib/$(get_triplet)/$directory/$tool"
+        "$(get_triplet_path)/$directory/$tool"
         "/usr/lib64/$directory/$tool"
         "/usr/lib/$directory/$tool"
         "/usr/bin/$tool"
