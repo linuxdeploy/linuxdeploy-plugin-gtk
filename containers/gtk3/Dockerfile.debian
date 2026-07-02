@@ -1,4 +1,4 @@
-FROM docker.io/debian:buster AS build-stage
+FROM docker.io/debian:trixie AS build-stage
 WORKDIR /linuxdeploy
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,7 +20,7 @@ RUN ./linuxdeploy-${MACHINE}.AppImage \
     --desktop-file /usr/share/applications/gtk3-widget-factory.desktop \
     --icon-file /usr/share/icons/hicolor/256x256/apps/gtk3-widget-factory.png
 
-FROM docker.io/debian:buster
+FROM docker.io/debian:trixie
 VOLUME ["/AppImage"]
 WORKDIR /AppImage
 ENV APPIMAGE_EXTRACT_AND_RUN=1

@@ -1,4 +1,4 @@
-FROM docker.io/debian:bookworm AS build-stage
+FROM docker.io/debian:trixie AS build-stage
 WORKDIR /linuxdeploy
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,7 +20,7 @@ RUN ./linuxdeploy-${MACHINE}.AppImage \
     --desktop-file /usr/share/applications/org.gtk.WidgetFactory4.desktop \
     --icon-file /usr/share/icons/hicolor/scalable/apps/org.gtk.WidgetFactory4.svg
 
-FROM docker.io/debian:bookworm
+FROM docker.io/debian:trixie
 VOLUME ["/AppImage"]
 WORKDIR /AppImage
 ENV APPIMAGE_EXTRACT_AND_RUN=1
