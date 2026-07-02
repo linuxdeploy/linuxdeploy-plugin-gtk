@@ -50,7 +50,7 @@ jobs:
           podman cp "${CONTAINER_NAME}:/AppImage/Widget_Factory.AppImage" "${ARTIFACT_DIR}"
           podman stop "${CONTAINER_NAME}" --time 0
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.gtk-version }}_${{ matrix.linux-distro }}_${{ env.MACHINE }}
           path: ${{ env.ARTIFACT_DIR }}/
