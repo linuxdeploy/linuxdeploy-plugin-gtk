@@ -260,6 +260,14 @@ cat >> "$HOOKFILE" <<EOF
 export GI_TYPELIB_PATH="\$APPDIR/${gi_typelibsdir/$LD_GTK_LIBRARY_PATH//usr/lib}"
 EOF
 
+echo "Installing Gio modules"
+gio_moduledir="$(get_pkgconf_variable "giomoduledir" "gio-2.0" "$LD_GTK_LIBRARY_PATH/gio/modules")"
+copy_lib_tree "$gio_moduledir" "$APPDIR/"
+gio-querymodules "$APPDIR/${gio_moduledir/$LD_GTK_LIBRARY_PATH//usr/lib}"
+cat >> "$HOOKFILE" <<EOF
+export GIO_MODULE_DIR="\$APPDIR/${gio_moduledir/$LD_GTK_LIBRARY_PATH//usr/lib}"
+EOF
+
 case "$DEPLOY_GTK_VERSION" in
     2)
         # https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/pull/20#issuecomment-826354261
