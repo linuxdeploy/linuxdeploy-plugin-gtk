@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   containers:
     strategy:
+      fail-fast: false
       matrix:
         gtk-version: [gtk3, gtk4]
         linux-distro: [debian, fedora, opensuse, ubuntu]
